@@ -1,0 +1,54 @@
+#include "wallpaper.h"
+
+#include <qdir.h>
+#include <qfilesystemwatcher.h>
+#include <qpainter.h>
+#include <qquickwindow.h>
+#include <qscreen.h>
+
+static const char *img_path = "/AppData/Roaming/Microsoft/Windows/Themes/TranscodedWallpaper";
+
+Wallpaper::Wallpaper() {
+    auto wallpaper = QDir::homePath() + img_path;
+    m_image = QImage(wallpaper, "JPEG");
+
+    auto watcher = new QFileSystemWatcher(this);
+    watcher->addPath(wallpaper);
+
+    connect(watcher, &QFileSystemWatcher::fileChanged, [this, wallpaper]() {
+        m_image = QImage(wallpaper, "JPEG");
+        update();
+    });
+}
+
+void Wallpaper::paint(QPainter *painter) {
+    QSize size(painter->device()->width(), painter->device()->height());
+
+    painter->fillRect(QRect{{0, 0}, size}, Qt::black);
+
+    QRect available = window()->screen()->availableGeometry();
+    QSize screen = window()->screen()->size();
+
+    if (m_image.width() < screen.width() || m_image.height() < screen.height() ||
+            (m_image.width() > screen.width() && m_image.height() > screen.height())) {
+        m_image = m_image.scaled(screen, Qt::KeepAspectRatioByExpanding,
+                                 Qt::SmoothTransformation);
+    }
+
+    QRectF target({0, 0}, size);
+    QRectF source({0, 0}, screen);
+
+    source.moveCenter({m_image.width()/2., m_image.height()/2.});
+
+    auto centered_top = source.top();
+
+    source.setTop(source.top() + available.top());
+        source.setLeft(source.left() + available.left());
+    source.setWidth(available.width());
+    source.setHeight(available.height());
+
+    if (centered_top > 20)
+        source.moveTop(source.top() - 20);
+
+    painter->drawImage(target, m_image, source);
+}
