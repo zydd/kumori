@@ -35,8 +35,6 @@ Item {
     }
 
     ShaderEffectSource {
-        id: eff
-
         anchors.fill: txt
 
         sourceItem: txt
@@ -45,7 +43,7 @@ Item {
 
         layer.enabled: true
         layer.effect: ShaderEffect {
-            property real ratio: eff.width / eff.height
+            property real ratio: txt.width / txt.height
             property var bg: ShaderEffectSource {
                 sourceItem: wallpaper
                 sourceRect: Qt.rect(youbi.x, youbi.y, youbi.width, youbi.height)
@@ -56,9 +54,7 @@ Item {
     }
 
     MouseArea {
-        id: ma
-        anchors.fill: youbi
-        hoverEnabled: true
-        drag.target: youbi
+        anchors.fill: parent
+        drag.target: parent
     }
 }

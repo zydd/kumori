@@ -11,10 +11,8 @@ ShaderEffectSource {
     property bool open: false
     property real radius: 0.0
     property point dir: Qt.point(0, 0);
-//    property alias mouseArea: ma
 
     opacity: 0
-    visible: opacity
 
     onRadiusChanged: {
         dir.x += Math.random() * 0.5 - 0.25
@@ -88,39 +86,4 @@ ShaderEffectSource {
                 dir.y = 0
         }
     }
-
-//    MouseArea {
-//        id: ma
-//        anchors.fill: parent
-//        hoverEnabled: true
-
-//        property point dir: Qt.point(0, 0);
-//        property point last: Qt.point(0, 0);
-
-
-
-//        onPositionChanged: {
-//            dir.x += (mouse.x - last.x) / width * 2
-//            last.x = mouse.x
-
-//            dir.y += (last.y - mouse.y) / height * 2
-//            last.y = mouse.y
-//        }
-
-//        onEntered: {
-//            last.x = mouseX
-//            last.y = mouseY
-//        }
-
-//        onClicked: {
-//            var dx = mouseX/width * 2 - 1
-//            var dy = mouseY/height * 2 - 1
-//            var r = Math.sqrt(dx*dx + dy*dy)
-//            var th = Math.atan2(dy, dx)
-//            if (th < 0)
-//                th += 2 * Math.PI;
-
-//            root.clicked(r, th)
-//        }
-//    }
 }

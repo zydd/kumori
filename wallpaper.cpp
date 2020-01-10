@@ -19,6 +19,11 @@ Wallpaper::Wallpaper() {
         m_image = QImage(wallpaper, "JPEG");
         update();
     });
+
+    connect(this, &QQuickItem::windowChanged, [this](QQuickWindow *window){
+        connect(window, &QQuickWindow::xChanged, this, &QQuickItem::update);
+        connect(window, &QQuickWindow::yChanged, this, &QQuickItem::update);
+    });
 }
 
 void Wallpaper::paint(QPainter *painter) {

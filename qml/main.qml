@@ -17,28 +17,15 @@ Window {
         Wallpaper {
             id: wallpaper
             anchors.fill: parent
-
-            Connections {
-                target: root
-                onXChanged: wallpaper.update()
-                onYChanged: wallpaper.update()
-            }
-        }
-
-        Youbi {
-            id: youbi
-
-            x: root.width - width
-            y: root.height - height
         }
 
         Launcher {
-            id: menu
             anchors.fill: parent
         }
-    }
 
-    onActiveChanged:
-        if (!active)
-            menu.open = false
+        Youbi {
+            x: root.width - width
+            y: root.height - height
+        }
+    }
 }
