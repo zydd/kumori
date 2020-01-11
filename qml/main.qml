@@ -19,13 +19,13 @@ Window {
             anchors.fill: parent
         }
 
-        Launcher {
-            anchors.fill: parent
-        }
-
         Youbi {
             x: root.width - width
             y: root.height - height
+        }
+
+        Launcher {
+            anchors.fill: parent
         }
     }
 }

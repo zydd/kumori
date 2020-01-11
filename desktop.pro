@@ -48,6 +48,7 @@ qml.files += \
     qml/youbi.frag \
     qml/Circle.qml \
     qml/circle.frag \
-    qml/CanvasMenu.qml
+    qml/CanvasMenu.qml \
+    qml/scanline.frag
 
 INSTALLS += qml
