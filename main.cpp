@@ -10,10 +10,18 @@
 
 #ifdef Q_OS_WIN
 #include "win.h"
+#include "ohm.h"
 #endif
 
 int main(int argc, char *argv[]) {
     qmlRegisterType<Wallpaper>("desktop", 0, 1, "Wallpaper");
+
+#ifdef Q_OS_WIN
+    qmlRegisterSingletonType<Ohm>("desktop", 0, 1, "Ohm",
+                                  [](QQmlEngine *, QJSEngine *) -> QObject * {
+        return new Ohm;
+    });
+#endif
 
     QGuiApplication app(argc, argv);
 
@@ -30,6 +38,9 @@ int main(int argc, char *argv[]) {
     engine.addImageProvider("licon", launcher->iconProvider());
 
     engine.load(url);
+
+    if (engine.rootObjects().empty())
+        return EXIT_FAILURE;
 
     auto window = qobject_cast<QWindow *>(engine.rootObjects()[0]);
     Q_ASSERT(window);

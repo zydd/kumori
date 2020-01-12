@@ -1,7 +1,7 @@
 QT += qml quick winextras
 CONFIG += lrelease embed_translations
 CONFIG += c++17
-LIBS += -luser32 -ldwmapi
+LIBS += -luser32 -ldwmapi -lwbemuuid
 DEFINES += NTDDI_WIN7=0x06010000 _WIN32_WINNT_WIN7=0x0601 WINVER=0x0601
 
 # The following define makes your compiler emit warnings if you use
@@ -18,6 +18,7 @@ SOURCES += \
         iconextractor.cpp \
         launcher.cpp \
         main.cpp \
+        ohm.cpp \
         wallpaper.cpp \
         win.cpp
 
@@ -37,6 +38,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 HEADERS += \
     iconextractor.h \
     launcher.h \
+    ohm.h \
     wallpaper.h \
     win.h
 
@@ -49,6 +51,8 @@ qml.files += \
     qml/Circle.qml \
     qml/circle.frag \
     qml/CanvasMenu.qml \
-    qml/scanline.frag
+    qml/scanline.frag \
+    qml/textcontrast.frag \
+    qml/HardwareInfo.qml
 
 INSTALLS += qml
