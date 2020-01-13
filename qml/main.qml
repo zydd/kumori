@@ -24,6 +24,19 @@ Window {
             y: root.height - height
         }
 
+        HardwareInfo {
+            height: contentHeight
+            width: 300
+            x: parent.width - width
+
+            updateInterval: window.active ? 2000 : 5000
+
+            MouseArea {
+                anchors.fill: parent
+                drag.target: parent
+            }
+        }
+
         Launcher {
             anchors.fill: parent
         }

@@ -27,8 +27,6 @@ Item {
 
         width: 400
         height: 400
-
-        sourceItem: root
     }
 
     Item {

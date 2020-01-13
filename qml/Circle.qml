@@ -2,11 +2,12 @@ import QtQuick 2.12
 import QtQuick.Window 2.12
 import QtGraphicalEffects 1.0
 
-ShaderEffectSource {
-    id: root
+ShaderEffect {
+    id: circle
 
-    sourceRect: Qt.rect(x, y, width, height)
-    live: false
+    property real ratio: width/height
+
+    fragmentShader: Qt.resolvedUrl('circle.frag')
 
     property bool open: false
     property real radius: 0.0
@@ -22,17 +23,17 @@ ShaderEffectSource {
     states: [
         State {
             name: 'open'
-            when: root.open
+            when: circle.open
 
-            PropertyChanges { target: root; radius: 4.0 }
-            PropertyChanges { target: root; opacity: 1 }
+            PropertyChanges { target: circle; radius: 4.0 }
+            PropertyChanges { target: circle; opacity: 1 }
         },
         State {
             name: 'closed'
 
-            PropertyChanges { target: root; radius: 0 }
-            PropertyChanges { target: root; dir: Qt.point(0.0, 0.0) }
-            PropertyChanges { target: root; opacity: 0 }
+            PropertyChanges { target: circle; radius: 0 }
+            PropertyChanges { target: circle; dir: Qt.point(0.0, 0.0) }
+            PropertyChanges { target: circle; opacity: 0 }
         }
     ]
 
@@ -63,15 +64,6 @@ ShaderEffectSource {
             }
         }
     ]
-
-    layer.enabled: true
-    layer.effect: ShaderEffect {
-        property real ratio: root.width/root.height
-        property point dir: root.dir
-        property real radius: root.radius
-
-        fragmentShader: Qt.resolvedUrl('circle.frag')
-    }
 
     Timer {
         running: dir.x || dir.y

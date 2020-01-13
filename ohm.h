@@ -105,6 +105,9 @@ public slots:
         if (m_updateInterval == updateInterval)
             return;
 
+        if (m_timer.isActive())
+            m_timer.setInterval(updateInterval);
+
         m_updateInterval = updateInterval;
         emit updateIntervalChanged(m_updateInterval);
     }

@@ -5,28 +5,46 @@
 #include <qpainter.h>
 #include <qquickwindow.h>
 #include <qscreen.h>
+#include <qtimer.h>
 
 static const char *img_path = "/AppData/Roaming/Microsoft/Windows/Themes/TranscodedWallpaper";
 
 Wallpaper::Wallpaper() {
-    auto wallpaper = QDir::homePath() + img_path;
-    m_image = QImage(wallpaper, "JPEG");
+    m_path = QDir::homePath() + img_path;
+    m_image = QImage(m_path, "JPEG");
 
     auto watcher = new QFileSystemWatcher(this);
-    watcher->addPath(wallpaper);
+    watcher->addPath(m_path);
 
-    connect(watcher, &QFileSystemWatcher::fileChanged, [this, wallpaper]() {
-        m_image = QImage(wallpaper, "JPEG");
-        update();
-    });
+    connect(watcher, &QFileSystemWatcher::fileChanged, this, &QQuickItem::update);
 
     connect(this, &QQuickItem::windowChanged, [this](QQuickWindow *window){
-        connect(window, &QQuickWindow::xChanged, this, &QQuickItem::update);
-        connect(window, &QQuickWindow::yChanged, this, &QQuickItem::update);
+        if (window) {
+            connect(window, &QQuickWindow::xChanged, this, &QQuickItem::update);
+            connect(window, &QQuickWindow::yChanged, this, &QQuickItem::update);
+        }
+    });
+
+    m_timer.setSingleShot(true);
+    m_timer.setInterval(4000);
+    connect(&m_timer, &QTimer::timeout, [this](){
+        if (! m_image.isNull())
+            m_image = {};
     });
 }
 
 void Wallpaper::paint(QPainter *painter) {
+    qDebug() << "Wallpaper::paint()";
+
+    if (m_image.isNull()) {
+        m_image = QImage(m_path, "JPEG");
+
+        if (m_image.isNull())
+            return;
+    }
+
+    QMetaObject::invokeMethod(this, [this](){ m_timer.start(); }, Qt::QueuedConnection);
+
     QSize size(painter->device()->width(), painter->device()->height());
 
     painter->fillRect(QRect{{0, 0}, size}, Qt::black);

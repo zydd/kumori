@@ -98,6 +98,8 @@ end:
 }
 
 bool Ohm::queryHardware() {
+    qDebug() << "Ohm::queryHardware()";
+
     if (!m_sensors.empty()) {
         beginRemoveRows({}, 0, m_sensors.size() - 1);
         m_hardware.clear();
@@ -146,8 +148,6 @@ bool Ohm::queryHardware() {
 //    for (auto s : m_sensors)
 //        qDebug() << s;
 
-    m_timer.start(m_updateInterval);
-
     return true;
 }
 
@@ -160,33 +160,26 @@ bool Ohm::querySensors() {
         ++count;
     });
 
-    if (count > 0) {
+    if (count == m_sensors.size()) {
         emit dataChanged(createIndex(0, 0), createIndex(m_sensorData.size() - 1, 0), {ValueRole});
 
         return true;
-    }
+    } else {
 
-    return false;
+        return false;
+    }
 }
 
 void Ohm::update() {
     if (! m_initialized)
         return;
 
-    if (! m_sensors.empty()) {
-        if (! querySensors())
-            goto err;
-    } else {
-        if (! queryHardware())
-            goto err;
-    }
-
-    if (m_autoUpdate)
-        m_timer.start(m_updateInterval);
-    return;
-
-err:
-    m_timer.start(5000);
+    if ((m_sensors.size() > 0 && querySensors())
+            || (queryHardware() && querySensors())) {
+        if (m_autoUpdate)
+            m_timer.start(m_updateInterval);
+    } else if (m_autoUpdate)
+        m_timer.start(5000);
 }
 
 QModelIndex Ohm::index(int row, int column, const QModelIndex &/*parent*/) const  {

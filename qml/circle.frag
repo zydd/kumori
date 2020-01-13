@@ -1,9 +1,8 @@
-uniform lowp sampler2D source;
-uniform lowp float qt_Opacity;
-varying highp vec2 qt_TexCoord0;
-uniform lowp float ratio;
-uniform lowp float radius;
-uniform lowp vec2 dir;
+uniform float qt_Opacity;
+varying vec2 qt_TexCoord0;
+uniform float ratio;
+uniform float radius;
+uniform vec2 dir;
 
 //void main(void)
 //{
@@ -63,8 +62,6 @@ void main() {
 
     vec3 rgb = vec3(1.0) - cmy;
     float alpha = max(max(cmy.x, cmy.y), cmy.z);
-
-//    vec3 src = texture2D(source, qt_TexCoord0.st).rgb;
 
     gl_FragColor = vec4(rgb, alpha) * alpha * qt_Opacity;
 }

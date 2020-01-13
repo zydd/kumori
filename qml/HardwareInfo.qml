@@ -1,10 +1,12 @@
 import QtQuick 2.0
-import QtGraphicalEffects 1.0
+import QtGraphicalEffects 1.12
 import desktop 0.1
 
 ListView {
     id: ohm
     interactive: false
+
+    visible: count > 0
 
     property int updateInterval: Ohm.updateInterval
     property bool autoUpdate: Ohm.autoUpdate
@@ -37,21 +39,20 @@ ListView {
         }
     }
 
-    RecursiveBlur {
+    GaussianBlur {
         id: wallpaper_blurred
         source: wallpaper
-        width: wallpaper.width
-        height: wallpaper.height
+        width: wallpaper.width/4
+        height: wallpaper.height/4
         visible: false
-        radius: 4
-        loops: 3
+        radius: 8
     }
 
     layer.enabled: true
     layer.effect: ShaderEffect {
         property var bg: ShaderEffectSource {
             sourceItem: wallpaper_blurred
-            sourceRect: Qt.rect(ohm.x, ohm.y, ohm.width, ohm.height)
+            sourceRect: Qt.rect(ohm.x/4, ohm.y/4, ohm.width/4, ohm.height/4)
         }
         fragmentShader: Qt.resolvedUrl('textcontrast.frag')
     }

@@ -1,8 +1,9 @@
 #ifndef WALLPAPER_H
 #define WALLPAPER_H
 
-#include <QQuickPaintedItem>
-#include <QImage>
+#include <qimage.h>
+#include <qquickpainteditem.h>
+#include <qtimer.h>
 
 class Wallpaper : public QQuickPaintedItem {
     Q_OBJECT
@@ -11,12 +12,10 @@ public:
     Wallpaper();
     void paint(QPainter *painter);
 
-signals:
-
-public slots:
-
 private:
     QImage m_image;
+    QTimer m_timer;
+    QString m_path;
 };
 
 #endif // WALLPAPER_H
