@@ -1,6 +1,8 @@
 #include "kumori.h"
 
 #include <qcoreapplication.h>
+#include <qdebug.h>
+#include <qqmlengine.h>
 #include <qstandardpaths.h>
 
 Kumori *Kumori::m_instance = nullptr;
@@ -17,4 +19,11 @@ QString Kumori::userImportDir() {
     }
 
     return userImports;
+}
+
+void Kumori::clearComponentCache() {
+    if (m_engine)
+        m_engine->clearComponentCache();
+    else
+        qDebug() << "Kumori::clearComponentCache(): engine unavailable";
 }

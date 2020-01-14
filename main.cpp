@@ -1,5 +1,5 @@
-#include <qdebug.h>
-#include <qdir.h>
+#include <qdiriterator.h>
+#include <qfilesystemwatcher.h>
 #include <qguiapplication.h>
 #include <qqmlapplicationengine.h>
 #include <qqmlcontext.h>
@@ -55,8 +55,6 @@ int main(int argc, char *argv[]) {
     engine.addImportPath(".");
     engine.addImportPath(userImports);
 
-    qDebug() << engine.importPathList();
-
     auto const url = QUrl::fromLocalFile(app.applicationDirPath() + "/kumori/MainWindow.qml");
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
@@ -84,6 +82,36 @@ int main(int argc, char *argv[]) {
     window->setGeometry(window->screen()->availableGeometry());
     QObject::connect(window->screen(), &QScreen::availableGeometryChanged,
                      window, qOverload<QRect const&>(&QWindow::setGeometry));
+
+    auto watcher = new QFileSystemWatcher;
+
+    auto watchDir = [watcher](QString dir) {
+        for (QDirIterator iter(dir, QDir::Dirs | QDir::NoDotAndDotDot,
+                               QDirIterator::Subdirectories); iter.hasNext();) {
+            auto dir = iter.next();
+            auto qml = QDir(dir).entryInfoList(QDir::Files);
+
+            watcher->addPath(dir);
+            for (QFileInfo const& f : qml)
+                watcher->addPath(f.filePath());
+        }
+    };
+
+    watchDir(userImports);
+    watchDir(app.applicationDirPath());
+    qDebug() << "FSWatcher:" << watcher->directories() << watcher->files();
+
+    QObject::connect(watcher, &QFileSystemWatcher::directoryChanged, [watcher](QString const& path){
+        QDir dir(path);
+        auto qml = dir.entryInfoList({"*.qml"}, QDir::Files);
+        auto dirs = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+
+        for (QFileInfo const& f : dirs)
+            watcher->addPath(f.filePath());
+        for (QFileInfo const& f : qml)
+            watcher->addPath(f.filePath());
+    });
+    QObject::connect(watcher, SIGNAL(fileChanged(QString)), window, SLOT(reload()));
 
     return app.exec();
 }

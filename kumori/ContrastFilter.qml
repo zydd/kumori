@@ -2,12 +2,12 @@ import QtQuick 2.0
 import QtGraphicalEffects 1.12
 
 ShaderEffect {
+    id: root
     anchors.fill: sourceItem
 
     property alias sourceItem: src.sourceItem
     property alias sourceRect: src.sourceRect
-    property alias bgItem: bg.sourceItem
-    property alias bgRect: bg.sourceRect
+    property alias backgroundItem: blurredBg.source
 
     GaussianBlur {
         id: blurredBg
@@ -20,7 +20,8 @@ ShaderEffect {
     property var bg: ShaderEffectSource {
         id: bg
         sourceItem: blurredBg
-        sourceRect: Qt.rect(sourceItem.x/4, sourceItem.y/4, sourceItem.width/4, sourceItem.height/4)
+        sourceRect: Qt.rect(root.sourceItem.x/4, root.sourceItem.y/4,
+                            root.sourceItem.width/4, root.sourceItem.height/4)
     }
 
     property var source: ShaderEffectSource {

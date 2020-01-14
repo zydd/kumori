@@ -2,16 +2,18 @@ import QtQuick 2.0
 import QtGraphicalEffects 1.12
 
 ShaderEffect {
+    id: root
     anchors.fill: sourceItem
 
     property alias sourceItem: src.sourceItem
     property alias sourceRect: src.sourceRect
-    property alias bgItem: bg.sourceItem
-    property alias bgRect: bg.sourceRect
+    property alias backgroundItem: bg.sourceItem
+    property alias backgroundRect: bg.sourceRect
 
     property var bg: ShaderEffectSource {
         id: bg
-        sourceRect: Qt.rect(sourceItem.x, sourceItem.y, sourceItem.width, sourceItem.height)
+        sourceRect: Qt.rect(root.sourceItem.x, root.sourceItem.y,
+                            root.sourceItem.width, root.sourceItem.height)
     }
 
     property var source: ShaderEffectSource {
