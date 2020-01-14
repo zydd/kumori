@@ -25,14 +25,12 @@ Launcher::Launcher(QObject *parent):
     connect(watcher, &QFileSystemWatcher::directoryChanged,
             this, &Launcher::reloadConfig);
 
-    qDebug() << watcher->directories();
-
     reloadConfig();
 }
 
 void Launcher::launch(QString program) {
     auto path = m_shortcuts[program]["path"];
-    qDebug() << "launch" << path;
+    qDebug() << "Launcher::launch():" << path;
 
     if (path.isValid()) {
 #ifdef Q_OS_WIN
@@ -54,7 +52,7 @@ void Launcher::launch(QString program) {
 }
 
 void Launcher::reloadConfig() {
-    qDebug() << "Launcher::reloadConfig";
+    qDebug() << "Launcher::reloadConfig()";
 
     m_shortcuts.clear();
     m_programs.clear();

@@ -15,27 +15,13 @@
 #include "ohm.h"
 #endif
 
-QString userImportDir() {
-    QSettings config;
-
-    auto userImports = Kumori::instance()->userImportDir();
-
-    QDir dir(userImports + "/desktop");
+void makeUserImportDir() {
+    QDir dir(Kumori::instance()->config("userImportDir"));
     dir.mkpath(dir.path());
 
     QFile root(dir.filePath("Root.qml"));
     if (! root.exists())
-        QFile::copy(qApp->applicationDirPath() + "/kumori/Root.qml", root.fileName());
-
-    QFile qmldir(dir.filePath("qmldir"));
-    if (! qmldir.exists()) {
-        qmldir.open(QFile::WriteOnly);
-
-        qmldir.write("module desktop\n");
-        qmldir.write("Root 0.1 Root.qml\n");
-    }
-
-    return userImports;
+        QFile::copy(Kumori::config("appImportDir") + "/Root.qml", root.fileName());
 }
 
 int main(int argc, char *argv[]) {
@@ -47,15 +33,20 @@ int main(int argc, char *argv[]) {
 #endif
 
     QGuiApplication app(argc, argv);
+    app.setOrganizationName("zydd");
     app.setApplicationName("kumori");
 
-    auto userImports = userImportDir();
+    Kumori kumori(app.arguments());
+
+    makeUserImportDir();
+    auto userImports = Kumori::config("userImportDir");
+    auto qmlDir = Kumori::config("appImportDir");
 
     QQmlApplicationEngine engine;
-    engine.addImportPath(".");
+    engine.addImportPath(qmlDir);
     engine.addImportPath(userImports);
 
-    auto const url = QUrl::fromLocalFile(app.applicationDirPath() + "/kumori/MainWindow.qml");
+    auto const url = QUrl::fromLocalFile(qmlDir + "/MainWindow.qml");
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl)
@@ -86,30 +77,29 @@ int main(int argc, char *argv[]) {
     auto watcher = new QFileSystemWatcher;
 
     auto watchDir = [watcher](QString dir) {
+        watcher->addPath(dir);
+
         for (QDirIterator iter(dir, QDir::Dirs | QDir::NoDotAndDotDot,
                                QDirIterator::Subdirectories); iter.hasNext();) {
             auto dir = iter.next();
-            auto qml = QDir(dir).entryInfoList(QDir::Files);
 
             watcher->addPath(dir);
-            for (QFileInfo const& f : qml)
-                watcher->addPath(f.filePath());
+
+            for (QFileInfo const& e : QDir(dir).entryInfoList({"*.qml"}, QDir::Files))
+                watcher->addPath(e.filePath());
         }
     };
 
     watchDir(userImports);
-    watchDir(app.applicationDirPath());
-    qDebug() << "FSWatcher:" << watcher->directories() << watcher->files();
+    watchDir(qmlDir);
 
     QObject::connect(watcher, &QFileSystemWatcher::directoryChanged, [watcher](QString const& path){
         QDir dir(path);
-        auto qml = dir.entryInfoList({"*.qml"}, QDir::Files);
-        auto dirs = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
 
-        for (QFileInfo const& f : dirs)
-            watcher->addPath(f.filePath());
-        for (QFileInfo const& f : qml)
-            watcher->addPath(f.filePath());
+        for (QFileInfo const& e : dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
+            watcher->addPath(e.filePath());
+        for (QFileInfo const& e : dir.entryInfoList({"*.qml"}, QDir::Files))
+            watcher->addPath(e.filePath());
     });
     QObject::connect(watcher, SIGNAL(fileChanged(QString)), window, SLOT(reload()));
 

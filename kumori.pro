@@ -46,20 +46,19 @@ HEADERS += \
 
 qml.path = /tmp/$${TARGET}/bin/kumori
 qml.files += \
-    kumori/qmldir \
-    kumori/MainWindow.qml \
-    kumori/Launcher.qml \
-    kumori/Youbi.qml \
-    kumori/square.frag \
-    kumori/Circle.qml \
-    kumori/circle.frag \
-    kumori/CanvasMenu.qml \
-    kumori/scanline.frag \
-    kumori/textcontrast.frag \
-    kumori/HardwareInfo.qml \
-    kumori/Root.qml \
-    kumori/ContrastFilter.qml \
-    kumori/SquareFilter.qml
+    qml/MainWindow.qml \
+    qml/Root.qml \
+    qml/scanline.frag \
+    qml/kumori/circle.frag \
+    qml/kumori/Circle.qml \
+    qml/kumori/ContrastFilter.qml \
+    qml/kumori/HardwareInfo.qml \
+    qml/kumori/Launcher.qml \
+    qml/kumori/qmldir \
+    qml/kumori/square.frag \
+    qml/kumori/SquareFilter.qml \
+    qml/kumori/textcontrast.frag \
+    qml/kumori/Youbi.qml
 
 INSTALLS += qml
 

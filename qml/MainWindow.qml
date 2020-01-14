@@ -2,7 +2,6 @@ import QtQuick 2.12
 import QtQuick.Window 2.12
 import QtGraphicalEffects 1.0
 import kumori 0.1
-//import desktop 0.1 as Desktop
 
 Window {
     id: window
@@ -19,14 +18,14 @@ Window {
         repeat: false
         interval: 300
         onTriggered: {
-            console.log('Reloading UI')
+            console.log('Reload UI')
+
             if (root)
                 root.destroy()
 
-            var path = 'file:///' + Kumori.userImportDir() + '/desktop/Root.qml'
-
             Kumori.clearComponentCache()
-            var component = Qt.createComponent(path);
+
+            var component = Qt.createComponent('file:///' + Kumori.userImportDir + '/Root.qml');
             if (component.status === Component.Ready)
                 root = component.createObject(window);
             else
@@ -35,6 +34,6 @@ Window {
     }
 
     function reload() {
-        timer.start()
+        timer.restart()
     }
 }

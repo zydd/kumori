@@ -68,7 +68,7 @@ void Ohm::query(BSTR query, std::function<void(IWbemClassObject *)> callback) {
     hr = pSvc->ExecQuery(_bstr_t("WQL"), query, WBEM_FLAG_FORWARD_ONLY, nullptr, &pEnum);
 
     if (FAILED(hr)) {
-       qDebug() << "IWbemServices::ExecQuery error:" << hex << unsigned(hr)
+       qDebug() << "Ohm::query(): IWbemServices::ExecQuery error:" << hex << unsigned(hr)
                 << QtWin::errorStringFromHresult(hr) << QtWin::stringFromHresult(hr);
        goto end;
     }
@@ -80,7 +80,7 @@ void Ohm::query(BSTR query, std::function<void(IWbemClassObject *)> callback) {
         hr = pEnum->Next(0, 1, &obj, &count);
 
         if (FAILED(hr)) {
-           qDebug() << "IEnumWbemClassObject::Next error:" << hex << unsigned(hr)
+           qDebug() << "Ohm::query(): IEnumWbemClassObject::Next error:" << hex << unsigned(hr)
                     << QtWin::errorStringFromHresult(hr) << QtWin::stringFromHresult(hr);
            goto end;
         }
@@ -147,11 +147,6 @@ bool Ohm::queryHardware() {
     for (int i = 0; i < m_sensors.size(); ++i)
         m_sensorId[m_sensors[i].id] = i;
     endInsertRows();
-
-//    for (auto h : m_hardware)
-//        qDebug() << h;
-//    for (auto s : m_sensors)
-//        qDebug() << s;
 
     return true;
 }
@@ -228,11 +223,11 @@ bool Ohm::initCom() {
     if (hr == RPC_E_CHANGED_MODE) {
         // COM already initialized, have faith :D
 
-        qDebug () << "WARNING: CoInitializeEx may have already been called";
+        qDebug () << "Ohm::initCom(): CoInitializeEx may have already been called";
         m_uninitializeCom = false;
         return true;
     } else if (FAILED(hr)) {
-        qDebug() << "CoInitializeEx error:" << hex << unsigned(hr)
+        qDebug() << "Ohm::initCom(): CoInitializeEx error:" << hex << unsigned(hr)
                  << QtWin::errorStringFromHresult(hr) << QtWin::stringFromHresult(hr);
       return false;
     } else
@@ -250,7 +245,7 @@ bool Ohm::initCom() {
         nullptr);                    // Reserved
 
     if (FAILED(hr)) {
-       qDebug() << "CoInitializeSecurity error:" << hex << unsigned(hr)
+       qDebug() << "Ohm::initCom(): CoInitializeSecurity error:" << hex << unsigned(hr)
                 << QtWin::errorStringFromHresult(hr) << QtWin::stringFromHresult(hr);
        CoUninitialize();
        return false;
@@ -266,7 +261,7 @@ bool Ohm::connectWmi() {
                           CLSCTX_INPROC_SERVER, IID_IWbemLocator,
                           reinterpret_cast<LPVOID *>(&pLoc));
     if (FAILED(hr)) {
-        qDebug() << "CoCreateInstance error:" << hex << unsigned(hr)
+        qDebug() << "Ohm::connectWmi(): CoCreateInstance error:" << hex << unsigned(hr)
                  << QtWin::errorStringFromHresult(hr) << QtWin::stringFromHresult(hr);
         return false;
     }
@@ -283,7 +278,7 @@ bool Ohm::connectWmi() {
                 &pSvc);   // IWbemServices proxy
 
     if (FAILED(hr)) {
-        qDebug() << "IWbemLocator::ConnectServer error:" << hex << unsigned(hr)
+        qDebug() << "Ohm::connectWmi(): IWbemLocator::ConnectServer error:" << hex << unsigned(hr)
                  << QtWin::errorStringFromHresult(hr) << QtWin::stringFromHresult(hr);
         return false;
     }
@@ -300,7 +295,7 @@ bool Ohm::connectWmi() {
                 EOAC_NONE);
 
     if (FAILED(hr)) {
-        qDebug() << "CoSetProxyBlanket error:" << hex << unsigned(hr)
+        qDebug() << "Ohm::connectWmi(): CoSetProxyBlanket error:" << hex << unsigned(hr)
                  << QtWin::errorStringFromHresult(hr) << QtWin::stringFromHresult(hr);
         return false;
     }

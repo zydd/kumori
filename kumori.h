@@ -3,14 +3,17 @@
 
 #include <qpointer.h>
 #include <qqmlengine.h>
+#include <qqmlpropertymap.h>
 #include <qsettings.h>
 
-class Kumori : public QObject {
+class Kumori : public QQmlPropertyMap {
     Q_OBJECT
+
 public:
+    Kumori(QStringList args);
+
     static Kumori *instance() {
-        if (! m_instance)
-            m_instance = new Kumori;
+        Q_ASSERT(m_instance);
         return m_instance;
     }
     static QObject *instance(QQmlEngine *engine, QJSEngine *) {
@@ -18,18 +21,27 @@ public:
         return instance();
     }
 
-    Q_INVOKABLE QString userImportDir();
+    static QString config(QString const& key);
 
 public slots:
     void clearComponentCache();
 
 private:
-    QSettings m_config;
-    QPointer<QQmlEngine> m_engine;
-
     static Kumori *m_instance;
 
-    Kumori() { }
+    QSettings m_config;
+    QPointer<QQmlEngine> m_engine;
+    QStringList m_args;
+
+    void addConfig(QString key, QVariant const& defaultValue = {},
+                   bool setDefault = false, bool ignoreArgs = false);
+
+public: // QtCreator autocomplete
+    enum Properties {
+        appImportDir,
+        userImportDir,
+    };
+    Q_ENUM(Properties)
 };
 
 #endif // KUMORI_H
