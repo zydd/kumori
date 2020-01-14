@@ -1,6 +1,8 @@
 import QtQuick 2.0
 
 Item {
+    anchors.fill: parent
+
     function showAt(x, y) {
         circle.x = x - circle.width/2
         circle.y = y - circle.height/2
@@ -22,8 +24,8 @@ Item {
     Circle {
         id: circle
 
-        x: root.width/2 - width/2
-        y: root.height/2 - height/2
+        x: parent.width/2 - width/2
+        y: parent.height/2 - height/2
 
         width: 400
         height: 400

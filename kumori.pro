@@ -16,6 +16,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         iconextractor.cpp \
+        kumori.cpp \
         launcher.cpp \
         main.cpp \
         ohm.cpp \
@@ -37,22 +38,29 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     iconextractor.h \
+    kumori.h \
     launcher.h \
     ohm.h \
     wallpaper.h \
     win.h
 
-qml.path = /tmp/$${TARGET}/bin/qml
+qml.path = /tmp/$${TARGET}/bin/kumori
 qml.files += \
-    qml/main.qml \
-    qml/Launcher.qml \
-    qml/Youbi.qml \
-    qml/youbi.frag \
-    qml/Circle.qml \
-    qml/circle.frag \
-    qml/CanvasMenu.qml \
-    qml/scanline.frag \
-    qml/textcontrast.frag \
-    qml/HardwareInfo.qml
+    kumori/qmldir \
+    kumori/MainWindow.qml \
+    kumori/Launcher.qml \
+    kumori/Youbi.qml \
+    kumori/square.frag \
+    kumori/Circle.qml \
+    kumori/circle.frag \
+    kumori/CanvasMenu.qml \
+    kumori/scanline.frag \
+    kumori/textcontrast.frag \
+    kumori/HardwareInfo.qml \
+    kumori/Root.qml \
+    kumori/ContrastFilter.qml \
+    kumori/SquareFilter.qml
 
 INSTALLS += qml
+
+DISTFILES +=

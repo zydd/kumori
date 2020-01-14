@@ -1,32 +1,63 @@
 #include <qdebug.h>
+#include <qdir.h>
 #include <qguiapplication.h>
 #include <qqmlapplicationengine.h>
 #include <qqmlcontext.h>
 #include <qscreen.h>
 #include <qwindow.h>
 
-#include "wallpaper.h"
+#include "kumori.h"
 #include "launcher.h"
+#include "wallpaper.h"
 
 #ifdef Q_OS_WIN
 #include "win.h"
 #include "ohm.h"
 #endif
 
+QString userImportDir() {
+    QSettings config;
+
+    auto userImports = Kumori::instance()->userImportDir();
+
+    QDir dir(userImports + "/desktop");
+    dir.mkpath(dir.path());
+
+    QFile root(dir.filePath("Root.qml"));
+    if (! root.exists())
+        QFile::copy(qApp->applicationDirPath() + "/kumori/Root.qml", root.fileName());
+
+    QFile qmldir(dir.filePath("qmldir"));
+    if (! qmldir.exists()) {
+        qmldir.open(QFile::WriteOnly);
+
+        qmldir.write("module desktop\n");
+        qmldir.write("Root 0.1 Root.qml\n");
+    }
+
+    return userImports;
+}
+
 int main(int argc, char *argv[]) {
-    qmlRegisterType<Wallpaper>("desktop", 0, 1, "Wallpaper");
+    qmlRegisterType<Wallpaper>("kumori", 0, 1, "Wallpaper");
+    qmlRegisterSingletonType<Kumori>("kumori", 0, 1, "Kumori", &Kumori::instance);
 
 #ifdef Q_OS_WIN
-    qmlRegisterSingletonType<Ohm>("desktop", 0, 1, "Ohm",
-                                  [](QQmlEngine *, QJSEngine *) -> QObject * {
-        return new Ohm;
-    });
+    qmlRegisterSingletonType<Ohm>("kumori", 0, 1, "Ohm", &Ohm::instance);
 #endif
 
     QGuiApplication app(argc, argv);
+    app.setApplicationName("kumori");
+
+    auto userImports = userImportDir();
 
     QQmlApplicationEngine engine;
-    const QUrl url(QStringLiteral("./qml/main.qml"));
+    engine.addImportPath(".");
+    engine.addImportPath(userImports);
+
+    qDebug() << engine.importPathList();
+
+    auto const url = QUrl::fromLocalFile(app.applicationDirPath() + "/kumori/MainWindow.qml");
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl)

@@ -1,0 +1,6 @@
+module kumori
+Youbi 0.1 Youbi.qml
+HardwareInfo 0.1 HardwareInfo.qml
+Launcher 0.1 Launcher.qml
+ContrastFilter 0.1 ContrastFilter.qml
+SquareFilter 0.1 SquareFilter.qml

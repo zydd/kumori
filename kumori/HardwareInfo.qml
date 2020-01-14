@@ -1,15 +1,16 @@
 import QtQuick 2.0
-import QtGraphicalEffects 1.12
-import desktop 0.1
+import kumori 0.1
 
 ListView {
     id: ohm
     interactive: false
-
+    implicitHeight: contentHeight
+    implicitWidth: 300
     visible: count > 0
 
     property int updateInterval: Ohm.updateInterval
     property bool autoUpdate: Ohm.autoUpdate
+    property color textColor: 'white'
 
     Component.onCompleted: {
         Ohm.setUpdateInterval(updateInterval)
@@ -27,6 +28,7 @@ ListView {
             id: txt1
             width: parent.width * 3/4
             text: path
+            color: textColor
             font.pixelSize: 18
         }
         Text {
@@ -35,25 +37,8 @@ ListView {
             anchors.right: parent.right
             text: Math.round(value * 100) / 100
             font: txt1.font
+            color: textColor
             horizontalAlignment: Text.AlignRight
         }
-    }
-
-    GaussianBlur {
-        id: wallpaper_blurred
-        source: wallpaper
-        width: wallpaper.width/4
-        height: wallpaper.height/4
-        visible: false
-        radius: 8
-    }
-
-    layer.enabled: true
-    layer.effect: ShaderEffect {
-        property var bg: ShaderEffectSource {
-            sourceItem: wallpaper_blurred
-            sourceRect: Qt.rect(ohm.x/4, ohm.y/4, ohm.width/4, ohm.height/4)
-        }
-        fragmentShader: Qt.resolvedUrl('textcontrast.frag')
     }
 }

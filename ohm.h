@@ -10,6 +10,9 @@
 #include <qtimer.h>
 #include <qvector.h>
 
+class QQmlEngine;
+class QJSEngine;
+
 class Ohm : public QAbstractItemModel {
     Q_OBJECT
     Q_PROPERTY(bool autoUpdate READ autoUpdate WRITE setAutoUpdate NOTIFY autoUpdateChanged)
@@ -18,6 +21,8 @@ class Ohm : public QAbstractItemModel {
 public:
     Ohm();
     virtual ~Ohm() override { uninit(); }
+    static QObject *instance(QQmlEngine *, QJSEngine *) {
+        return new Ohm; }
 
 private:
     enum Roles {

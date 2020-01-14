@@ -127,6 +127,11 @@ bool Ohm::queryHardware() {
         auto name = query_get<QString>(obj, L"Name");
         auto type = query_get<QString>(obj, L"SensorType");
 
+        if (type == "Data")
+            type = "GB";
+        else if (type == "SmallData")
+            type = "MB";
+
         sensors.push_back({id, path, name, type});
     });
 
