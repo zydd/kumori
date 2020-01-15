@@ -11,7 +11,6 @@
 #include "wallpaper.h"
 
 #ifdef Q_OS_WIN
-#include "win.h"
 #include "ohm.h"
 #endif
 
@@ -65,11 +64,6 @@ int main(int argc, char *argv[]) {
     auto window = qobject_cast<QWindow *>(engine.rootObjects()[0]);
     Q_ASSERT(window);
 
-#ifdef Q_OS_WIN
-//    exclude_from_peek(HWND(window->winId()));
-//    ignore_show_desktop(HWND(window->winId()));
-#endif
-
     window->setGeometry(window->screen()->availableGeometry());
     QObject::connect(window->screen(), &QScreen::availableGeometryChanged,
                      window, qOverload<QRect const&>(&QWindow::setGeometry));
@@ -84,7 +78,6 @@ int main(int argc, char *argv[]) {
             auto dir = iter.next();
 
             watcher->addPath(dir);
-
             for (QFileInfo const& e : QDir(dir).entryInfoList({"*.qml"}, QDir::Files))
                 watcher->addPath(e.filePath());
         }

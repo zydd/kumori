@@ -2,9 +2,11 @@
 #define KUMORI_H
 
 #include <qpointer.h>
-#include <qqmlengine.h>
+#include <qqmlapplicationengine.h>
 #include <qqmlpropertymap.h>
 #include <qsettings.h>
+
+class QQuickWindow;
 
 class Kumori : public QQmlPropertyMap {
     Q_OBJECT
@@ -17,20 +19,28 @@ public:
         return m_instance;
     }
     static QObject *instance(QQmlEngine *engine, QJSEngine *) {
-        instance()->m_engine = engine;
+        instance()->m_engine = qobject_cast<QQmlApplicationEngine *>(engine);
+        engine->setObjectOwnership(instance(), QQmlEngine::CppOwnership);
         return instance();
     }
 
     static QString config(QString const& key);
 
+    Q_INVOKABLE QQuickWindow *window();
+
+    Q_INVOKABLE void ignoreAeroPeek();
+    Q_INVOKABLE void drawOverDesktop();
+    Q_INVOKABLE void drawUnderDesktop();
+
 public slots:
     void clearComponentCache();
+    void play_pause();
 
 private:
     static Kumori *m_instance;
 
     QSettings m_config;
-    QPointer<QQmlEngine> m_engine;
+    QPointer<QQmlApplicationEngine> m_engine;
     QStringList m_args;
 
     void addConfig(QString key, QVariant const& defaultValue = {},

@@ -4,13 +4,25 @@ import QtGraphicalEffects 1.0
 import kumori 0.1
 
 Window {
-    id: window
-
-    visible: true
-    flags: Qt.WindowStaysOnBottomHint | Qt.FramelessWindowHint // | Qt.WindowTransparentForInput
+    id: base
     color: 'transparent'
+    flags: Qt.WindowStaysOnBottomHint | Qt.FramelessWindowHint | Qt.Popup | Qt.WindowTransparentForInput
 
-    property var root
+    property var window
+
+    Component {
+        id: wcomp
+
+        Window {
+            width: base.width
+            height: base.height
+            x: base.x
+            y: base.y
+
+            color: 'transparent'
+            flags: Qt.WindowStaysOnBottomHint | Qt.FramelessWindowHint | Qt.SubWindow
+        }
+    }
 
     Timer {
         id: timer
@@ -20,16 +32,20 @@ Window {
         onTriggered: {
             console.log('Reload UI')
 
-            if (root)
-                root.destroy()
+            if (window)
+                window.destroy()
+
+            window = wcomp.createObject(base)
 
             Kumori.clearComponentCache()
 
             var component = Qt.createComponent('file:///' + Kumori.userImportDir + '/Root.qml');
             if (component.status === Component.Ready)
-                root = component.createObject(window);
+                component.createObject(window);
             else
                 print(component.errorString())
+
+            window.showMaximized()
         }
     }
 

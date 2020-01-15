@@ -20,8 +20,7 @@ SOURCES += \
         launcher.cpp \
         main.cpp \
         ohm.cpp \
-        wallpaper.cpp \
-        win.cpp
+        wallpaper.cpp
 
 RESOURCES +=
 
@@ -41,8 +40,7 @@ HEADERS += \
     kumori.h \
     launcher.h \
     ohm.h \
-    wallpaper.h \
-    win.h
+    wallpaper.h
 
 qml.path = /tmp/$${TARGET}/bin/kumori
 qml.files += \

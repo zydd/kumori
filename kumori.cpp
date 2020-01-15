@@ -4,6 +4,12 @@
 #include <qdebug.h>
 #include <qqmlengine.h>
 #include <qstandardpaths.h>
+#include <qquickwindow.h>
+#include <qwinfunctions.h>
+
+#ifdef Q_OS_WIN
+#include <dwmapi.h>
+#endif
 
 Kumori *Kumori::m_instance = nullptr;
 
@@ -30,6 +36,108 @@ QString Kumori::config(QString const& key) {
         obj = obj->value(keys[i]).value<QQmlPropertyMap *>();
 
     return obj ? obj->value(keys.last()).toString() : QString();
+}
+
+QQuickWindow *Kumori::window() {
+    if (! m_engine) return nullptr;
+    Q_ASSERT(!m_engine->rootObjects().empty());
+
+    return m_engine->rootObjects()[0]->property("window").value<QQuickWindow *>();
+}
+
+
+void Kumori::ignoreAeroPeek() {
+#ifdef Q_OS_WIN
+    /* when this flag is set, the window disappears during the
+     * animation when changing workspaces
+     */
+    auto window = this->window();
+    if (!window) return;
+
+    BOOL bValue = TRUE;
+    auto hr = DwmSetWindowAttribute(HWND(window->winId()), DWMWA_EXCLUDED_FROM_PEEK, &bValue, sizeof(bValue));
+    if (FAILED(hr)) {
+        qDebug() << "Kumori::ignoreAeroPeek()"
+                 << hex << unsigned(hr)
+                 << QtWin::errorStringFromHresult(hr) << QtWin::stringFromHresult(hr);
+    }
+#endif
+}
+
+void Kumori::drawOverDesktop() {
+#ifdef Q_OS_WIN
+    auto window = this->window();
+    if (!window) return;
+
+    HWND desktop = nullptr;
+
+    EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
+        HWND *ret = reinterpret_cast<HWND *>(lParam);
+        *ret = FindWindowEx(hwnd, nullptr, L"SHELLDLL_DefView", nullptr);
+        return *ret == nullptr;
+    }, LPARAM(&desktop));
+
+    if (!desktop) {
+        qDebug() << "Kumori::drawOverDesktop(): unable to locate desktop window";
+        return;
+    }
+
+    SetParent(HWND(window->winId()), desktop);
+#endif
+}
+
+void Kumori::drawUnderDesktop() {
+#ifdef Q_OS_WIN
+    auto window = this->window();
+    if (!window) return;
+
+    // Spawn a WorkerW behind the desktop icons.
+    SendMessageTimeout(FindWindow(L"Progman", nullptr), 0x052C, 0, 0, SMTO_NORMAL, 1000, nullptr);
+
+    HWND workerw = nullptr;
+
+    // Find window that has the SHELLDLL_DefView as a child and take its next sibling.
+    EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
+        if (FindWindowEx(hwnd, nullptr, L"SHELLDLL_DefView", nullptr)) {
+            HWND *ret = reinterpret_cast<HWND *>(lParam);
+            // return the WorkerW window after SHELLDLL_DefView.
+            *ret = FindWindowEx(nullptr, hwnd, L"WorkerW", nullptr);
+            return false;
+        }
+        return true;
+    }, LPARAM(&workerw));
+
+    if (!workerw) {
+        qDebug() << "Kumori::drawOverDesktop(): unable to locate wallpaper window";
+        return;
+    }
+
+    SetParent(HWND(window->winId()), workerw);
+#endif
+}
+
+void Kumori::play_pause() {
+#ifdef Q_OS_WIN
+    KEYBDINPUT kbi;
+    kbi.wVk     = VK_MEDIA_PLAY_PAUSE;
+    kbi.wScan   = 0;
+    kbi.dwFlags = 0;
+    kbi.time    = 0;
+    kbi.dwExtraInfo = ULONG_PTR(GetMessageExtraInfo());
+
+    INPUT input;
+    input.type = INPUT_KEYBOARD;
+    input.ki = kbi;
+
+    SendInput(1, &input, sizeof(INPUT));
+#endif
+}
+
+void Kumori::clearComponentCache() {
+    if (m_engine)
+        m_engine->clearComponentCache();
+    else
+        qDebug() << "Kumori::clearComponentCache(): engine unavailable";
 }
 
 void Kumori::addConfig(QString key, QVariant const& defaultValue, bool setDefault, bool ignoreArgs) {
@@ -72,11 +180,4 @@ void Kumori::addConfig(QString key, QVariant const& defaultValue, bool setDefaul
     Q_ASSERT(!obj->contains(keys.last()));
 
     obj->insert(keys.last(), config);
-}
-
-void Kumori::clearComponentCache() {
-    if (m_engine)
-        m_engine->clearComponentCache();
-    else
-        qDebug() << "Kumori::clearComponentCache(): engine unavailable";
 }
