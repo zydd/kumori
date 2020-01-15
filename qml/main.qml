@@ -11,20 +11,6 @@ Window {
     property var window
     property var error
 
-    Component {
-        id: wcomp
-
-        Window {
-            width: base.width
-            height: base.height
-            x: base.x
-            y: base.y
-
-            color: 'transparent'
-            flags: Qt.WindowStaysOnBottomHint | Qt.FramelessWindowHint | Qt.SubWindow
-        }
-    }
-
     Timer {
         id: timer
         running: true
@@ -40,14 +26,20 @@ Window {
                 error.destroy()
             }
 
-            window = wcomp.createObject(base)
-
             Kumori.clearComponentCache()
+
+            window = Qt.createQmlObject('import QtQuick.Window 2.12; Window { color: "transparent";'
+                                        + 'flags: Qt.WindowStaysOnBottomHint | Qt.FramelessWindowHint | Qt.SubWindow }',
+                                        base)
 
             var component = Qt.createComponent('file:///' + Kumori.userImportDir + '/Root.qml');
             if (component.status === Component.Ready) {
                 component.createObject(window);
-                window.showMaximized()
+                window.x = Qt.binding(() => base.x)
+                window.y = Qt.binding(() => base.y)
+                window.width = Qt.binding(() => base.width)
+                window.height = Qt.binding(() => base.height)
+                window.showNormal()
             } else {
                 showError(component.errorString())
             }

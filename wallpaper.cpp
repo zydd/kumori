@@ -49,7 +49,7 @@ void Wallpaper::paint(QPainter *painter) {
 
     painter->fillRect(QRect{{0, 0}, size}, Qt::black);
 
-    QRect available = window()->screen()->availableGeometry();
+    QRectF available = {window()->x() + x(), window()->y() + y(), width(), height()};
     QSize screen = window()->screen()->size();
 
     if (m_image.width() < screen.width() || m_image.height() < screen.height() ||

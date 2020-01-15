@@ -28,9 +28,9 @@ public:
 
     Q_INVOKABLE QQuickWindow *window();
 
-    Q_INVOKABLE void ignoreAeroPeek();
-    Q_INVOKABLE void drawOverDesktop();
-    Q_INVOKABLE void drawUnderDesktop();
+    Q_INVOKABLE void ignoreAeroPeek(QQuickWindow *window);
+    Q_INVOKABLE void drawOverDesktop(QQuickWindow *window);
+    Q_INVOKABLE void drawUnderDesktop(QQuickWindow *window);
 
 public slots:
     void clearComponentCache();

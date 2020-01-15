@@ -46,14 +46,11 @@ QQuickWindow *Kumori::window() {
 }
 
 
-void Kumori::ignoreAeroPeek() {
+void Kumori::ignoreAeroPeek(QQuickWindow *window) {
 #ifdef Q_OS_WIN
     /* when this flag is set, the window disappears during the
      * animation when changing workspaces
      */
-    auto window = this->window();
-    if (!window) return;
-
     BOOL bValue = TRUE;
     auto hr = DwmSetWindowAttribute(HWND(window->winId()), DWMWA_EXCLUDED_FROM_PEEK, &bValue, sizeof(bValue));
     if (FAILED(hr)) {
@@ -64,11 +61,8 @@ void Kumori::ignoreAeroPeek() {
 #endif
 }
 
-void Kumori::drawOverDesktop() {
+void Kumori::drawOverDesktop(QQuickWindow *window) {
 #ifdef Q_OS_WIN
-    auto window = this->window();
-    if (!window) return;
-
     HWND desktop = nullptr;
 
     EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
@@ -86,11 +80,8 @@ void Kumori::drawOverDesktop() {
 #endif
 }
 
-void Kumori::drawUnderDesktop() {
+void Kumori::drawUnderDesktop(QQuickWindow *window) {
 #ifdef Q_OS_WIN
-    auto window = this->window();
-    if (!window) return;
-
     // Spawn a WorkerW behind the desktop icons.
     SendMessageTimeout(FindWindow(L"Progman", nullptr), 0x052C, 0, 0, SMTO_NORMAL, 1000, nullptr);
 
