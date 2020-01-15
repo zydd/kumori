@@ -44,7 +44,7 @@ HEADERS += \
 
 qml.path = /tmp/$${TARGET}/bin/kumori
 qml.files += \
-    qml/MainWindow.qml \
+    qml/main.qml \
     qml/Root.qml \
     qml/scanline.frag \
     qml/kumori/circle.frag \

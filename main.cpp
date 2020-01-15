@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     engine.addImportPath(qmlDir);
     engine.addImportPath(userImports);
 
-    auto const url = QUrl::fromLocalFile(qmlDir + "/MainWindow.qml");
+    auto const url = QUrl::fromLocalFile(qmlDir + "/main.qml");
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl)
