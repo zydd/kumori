@@ -1,4 +1,7 @@
 import QtQuick 2.0
+import Qt.labs.platform 1.1
+import kumori 0.1
+import '.'
 
 Item {
     anchors.fill: parent
@@ -31,6 +34,20 @@ Item {
         height: 400
     }
 
+    DirWatcher {
+        id: dir
+        dirs: StandardPaths.standardLocations(StandardPaths.DesktopLocation)
+        onEntriesChanged: {
+            for (var c in icons.children)
+                icons.children[c].destroy()
+
+            for (var i = 0; i < dir.entries.length; ++i) {
+                icon.createObject(icons, { p: i / dir.entries.length,
+                                           source: 'image://shellIcon/' + dir.entries[i] })
+            }
+        }
+    }
+
     Item {
         id: icons
 
@@ -39,21 +56,6 @@ Item {
         visible: circle.visible
 
         property real radius: circle.width/2 * circle.radius/6
-
-        Component.onCompleted: {
-            launcher.programsChanged.connect(reload)
-            reload()
-        }
-
-        function reload() {
-            for (var c in children)
-                children[c].destroy()
-
-            for (var i = 0; i < launcher.programs.length; ++i) {
-                icon.createObject(icons, { p: i / launcher.programs.length,
-                                           source: 'image://licon/' + launcher.programs[i] })
-            }
-        }
 
         Component {
             id: icon
@@ -131,7 +133,7 @@ Item {
 
         onReleased: {
             var p = polar(mouse)
-            var s = p.y * launcher.programs.length + 0.5
+            var s = p.y * dir.entries.length + 0.5
 
             if (presStart) {
                 var dx = mouseX - presStart.x
@@ -139,7 +141,7 @@ Item {
 
                 if (p.x > 3/6 && p.x < 2) {
                     hide()
-                    launcher.launch(launcher.programs[Math.floor(s % launcher.programs.length)])
+                    Qt.openUrlExternally(dir.entries[Math.floor(s % dir.entries.length)])
                 }
 
                 presStart = null
@@ -148,7 +150,7 @@ Item {
                     hide()
 
                     if (p.x > 3/6 && p.x < 5/6) {
-                        launcher.launch(launcher.programs[Math.floor(s % launcher.programs.length)])
+                        Qt.openUrlExternally(dir.entries[Math.floor(s % dir.entries.length)])
                     }
                 }
             }

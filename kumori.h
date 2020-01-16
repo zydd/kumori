@@ -26,15 +26,13 @@ public:
 
     static QString config(QString const& key);
 
-    Q_INVOKABLE QQuickWindow *window();
-
     Q_INVOKABLE void ignoreAeroPeek(QQuickWindow *window);
     Q_INVOKABLE void drawOverDesktop(QQuickWindow *window);
     Q_INVOKABLE void drawUnderDesktop(QQuickWindow *window);
 
 public slots:
     void clearComponentCache();
-    void play_pause();
+    void playPause();
 
 private:
     static Kumori *m_instance;

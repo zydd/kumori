@@ -1,7 +1,7 @@
 QT += qml quick winextras
 CONFIG += lrelease embed_translations
 CONFIG += c++17
-LIBS += -luser32 -ldwmapi -lwbemuuid
+LIBS += -luser32 -ldwmapi -lwbemuuid -lgdi32
 DEFINES += NTDDI_WIN7=0x06010000 _WIN32_WINNT_WIN7=0x0601 WINVER=0x0601
 
 # The following define makes your compiler emit warnings if you use
@@ -15,11 +15,11 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-        iconextractor.cpp \
+        dirwatcher.cpp \
         kumori.cpp \
-        launcher.cpp \
         main.cpp \
         ohm.cpp \
+        shelliconprovider.cpp \
         wallpaper.cpp
 
 RESOURCES +=
@@ -36,10 +36,10 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-    iconextractor.h \
+    dirwatcher.h \
     kumori.h \
-    launcher.h \
     ohm.h \
+    shelliconprovider.h \
     wallpaper.h
 
 qml.path = /tmp/$${TARGET}/bin/kumori

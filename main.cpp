@@ -7,26 +7,30 @@
 #include <qwindow.h>
 
 #include "kumori.h"
-#include "launcher.h"
+#include "dirwatcher.h"
+#include "shelliconprovider.h"
 #include "wallpaper.h"
 
 #ifdef Q_OS_WIN
 #include "ohm.h"
 #endif
 
-void makeUserImportDir() {
+QString userImportDir() {
     QDir dir(Kumori::instance()->config("userImportDir"));
     dir.mkpath(dir.path());
 
     QFile root(dir.filePath("Root.qml"));
     if (! root.exists())
         QFile::copy(Kumori::config("appImportDir") + "/Root.qml", root.fileName());
+
+    return dir.path();
 }
 
 int main(int argc, char *argv[]) {
+    qmlRegisterType<DirWatcher>("kumori", 0, 1, "DirWatcher");
     qmlRegisterType<Wallpaper>("kumori", 0, 1, "Wallpaper");
-    qmlRegisterSingletonType<Kumori>("kumori", 0, 1, "Kumori", &Kumori::instance);
 
+    qmlRegisterSingletonType<Kumori>("kumori", 0, 1, "Kumori", &Kumori::instance);
 #ifdef Q_OS_WIN
     qmlRegisterSingletonType<Ohm>("kumori", 0, 1, "Ohm", &Ohm::instance);
 #endif
@@ -37,29 +41,25 @@ int main(int argc, char *argv[]) {
 
     Kumori kumori(app.arguments());
 
-    makeUserImportDir();
-    auto userImports = Kumori::config("userImportDir");
-    auto qmlDir = Kumori::config("appImportDir");
+    auto const userImports = userImportDir();
+    auto const qmlDir = Kumori::config("appImportDir");
+    auto const url = QUrl::fromLocalFile(qmlDir + "/main.qml");
 
     QQmlApplicationEngine engine;
-    engine.addImportPath(qmlDir);
-    engine.addImportPath(userImports);
 
-    auto const url = QUrl::fromLocalFile(qmlDir + "/main.qml");
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl)
             QCoreApplication::exit(-1);
     }, Qt::QueuedConnection);
 
-    auto launcher = new Launcher;
-    engine.rootContext()->setContextProperty("launcher", launcher);
-    engine.addImageProvider("licon", launcher->iconProvider());
-
+    engine.addImportPath(qmlDir);
+    engine.addImportPath(userImports);
+    engine.addImageProvider("shellIcon", new ShellIconProvider);
     engine.load(url);
 
     if (engine.rootObjects().empty())
-        return EXIT_FAILURE;
+        QCoreApplication::exit(-1);
 
     auto window = qobject_cast<QWindow *>(engine.rootObjects()[0]);
     Q_ASSERT(window);
@@ -83,9 +83,6 @@ int main(int argc, char *argv[]) {
         }
     };
 
-    watchDir(userImports);
-    watchDir(qmlDir);
-
     QObject::connect(watcher, &QFileSystemWatcher::directoryChanged, [watcher](QString const& path){
         QDir dir(path);
 
@@ -95,6 +92,9 @@ int main(int argc, char *argv[]) {
             watcher->addPath(e.filePath());
     });
     QObject::connect(watcher, SIGNAL(fileChanged(QString)), window, SLOT(reload()));
+
+    watchDir(userImports);
+    watchDir(qmlDir);
 
     return app.exec();
 }

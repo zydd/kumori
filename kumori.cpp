@@ -2,9 +2,11 @@
 
 #include <qcoreapplication.h>
 #include <qdebug.h>
+#include <qdesktopservices.h>
+#include <qfilesystemwatcher.h>
 #include <qqmlengine.h>
-#include <qstandardpaths.h>
 #include <qquickwindow.h>
+#include <qstandardpaths.h>
 #include <qwinfunctions.h>
 
 #ifdef Q_OS_WIN
@@ -37,14 +39,6 @@ QString Kumori::config(QString const& key) {
 
     return obj ? obj->value(keys.last()).toString() : QString();
 }
-
-QQuickWindow *Kumori::window() {
-    if (! m_engine) return nullptr;
-    Q_ASSERT(!m_engine->rootObjects().empty());
-
-    return m_engine->rootObjects()[0]->property("window").value<QQuickWindow *>();
-}
-
 
 void Kumori::ignoreAeroPeek(QQuickWindow *window) {
 #ifdef Q_OS_WIN
@@ -107,7 +101,14 @@ void Kumori::drawUnderDesktop(QQuickWindow *window) {
 #endif
 }
 
-void Kumori::play_pause() {
+void Kumori::clearComponentCache() {
+    if (m_engine)
+        m_engine->clearComponentCache();
+    else
+        qDebug() << "Kumori::clearComponentCache(): engine unavailable";
+}
+
+void Kumori::playPause() {
 #ifdef Q_OS_WIN
     KEYBDINPUT kbi;
     kbi.wVk     = VK_MEDIA_PLAY_PAUSE;
@@ -122,13 +123,6 @@ void Kumori::play_pause() {
 
     SendInput(1, &input, sizeof(INPUT));
 #endif
-}
-
-void Kumori::clearComponentCache() {
-    if (m_engine)
-        m_engine->clearComponentCache();
-    else
-        qDebug() << "Kumori::clearComponentCache(): engine unavailable";
 }
 
 void Kumori::addConfig(QString key, QVariant const& defaultValue, bool setDefault, bool ignoreArgs) {

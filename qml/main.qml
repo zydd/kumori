@@ -47,6 +47,7 @@ Window {
     }
 
     function showError(msg) {
+        console.log(msg)
         if (window) window.destroy()
         error = Qt.createQmlObject('import QtQuick 2.12; Text { color: "white"; text: "' + msg +
                                    '"; wrapMode: Text.Wrap; anchors.fill: parent; }', base)
