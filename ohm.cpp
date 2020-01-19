@@ -44,11 +44,15 @@ QDebug operator<<(QDebug dbg, Ohm::SensorInfo const& si) {
 }
 
 Ohm::Ohm() {
-    m_roleNames[IdRole] = tr("id").toUtf8();
-    m_roleNames[PathRole] = tr("path").toUtf8();
-    m_roleNames[NameRole] = tr("name").toUtf8();
-    m_roleNames[TypeRole] = tr("type").toUtf8();
+    m_roleNames[IdRole]    = tr("id").toUtf8();
+    m_roleNames[PathRole]  = tr("path").toUtf8();
+    m_roleNames[NameRole]  = tr("name").toUtf8();
+    m_roleNames[TypeRole]  = tr("type").toUtf8();
     m_roleNames[ValueRole] = tr("value").toUtf8();
+    m_roleNames[HwId]      = tr("hwid").toUtf8();
+    m_roleNames[HwPath]    = tr("hwpath").toUtf8();
+    m_roleNames[HwName]    = tr("hwname").toUtf8();
+    m_roleNames[HwType]    = tr("hwtype").toUtf8();
 
     m_timer.setSingleShot(true);
     connect(&m_timer, &QTimer::timeout, this, &Ohm::update);
@@ -121,18 +125,19 @@ bool Ohm::queryHardware() {
     if (hardware.empty())
         return false;
 
-    query(_bstr_t("select InstanceId, Identifier, Name, SensorType from Sensor"), [&](auto *obj) {
+    query(_bstr_t("select InstanceId, Identifier, Name, SensorType, Parent from Sensor"), [&](auto *obj) {
         auto id = query_get<QString>(obj, L"InstanceId");
         auto path = query_get<QString>(obj, L"Identifier");
         auto name = query_get<QString>(obj, L"Name");
         auto type = query_get<QString>(obj, L"SensorType");
+        auto parent = query_get<QString>(obj, L"Parent");
 
         if (type == "Data")
             type = "GB";
         else if (type == "SmallData")
             type = "MB";
 
-        sensors.push_back({id, path, name, type});
+        sensors.push_back({id, path, name, type, parent});
     });
 
     std::sort(hardware.begin(), hardware.end(),
@@ -143,10 +148,12 @@ bool Ohm::queryHardware() {
     beginInsertRows({}, 0, sensors.size() - 1);
     m_hardware = std::move(hardware);
     m_sensors = std::move(sensors);
-    m_sensorData = QVector<float>(m_sensors.size(), 0.0);
+    m_sensorData = QVector<qreal>(m_sensors.size(), 0.0);
     for (int i = 0; i < m_sensors.size(); ++i)
-        m_sensorId[m_sensors[i].id] = i;
+        m_sensorId[m_sensors[i].identifier] = i;
     endInsertRows();
+
+    emit indexChanged();
 
     return true;
 }
@@ -154,20 +161,18 @@ bool Ohm::queryHardware() {
 bool Ohm::querySensors() {
     int count = 0;
 
-    query(_bstr_t("select InstanceId, Value from Sensor"), [this, &count](auto *obj) {
-        int i = m_sensorId[query_get<QString>(obj, L"InstanceId")];
-        m_sensorData[i] = query_get<float>(obj, L"Value");
+    query(_bstr_t("select Identifier, Value from Sensor"), [this, &count](auto *obj) {
+        int i = m_sensorId[query_get<QString>(obj, L"Identifier")];
+        m_sensorData[i] = qreal(query_get<float>(obj, L"Value"));
         ++count;
     });
 
     if (count == m_sensors.size()) {
         emit dataChanged(createIndex(0, 0), createIndex(m_sensorData.size() - 1, 0), {ValueRole});
-
         return true;
-    } else {
-
-        return false;
     }
+
+    return false;
 }
 
 void Ohm::update() {
@@ -199,16 +204,28 @@ int Ohm::columnCount(const QModelIndex &/*parent*/) const {
 }
 
 QVariant Ohm::data(const QModelIndex &index, int role) const {
-    switch (role) {
+    auto hardware = m_hardware.begin();
+    if (role >= HwId) {
+        hardware = std::find_if(m_hardware.begin(), m_hardware.end(),
+                              [this, &index](const HardwareInfo &i){
+            return i.identifier == m_sensors[index.row()].parent; });
+        Q_ASSERT(hardware != m_hardware.end());
+    }
 
+    switch (role) {
     case ValueRole: return m_sensorData[index.row()];
     case IdRole:    return m_sensors[index.row()].id;
     case PathRole:  return m_sensors[index.row()].identifier;
     case NameRole:  return m_sensors[index.row()].name;
     case TypeRole:  return m_sensors[index.row()].type;
-
-    default: return {};
+    case HwId:      return hardware->id;
+    case HwPath:    return hardware->identifier;
+    case HwName:    return hardware->name;
+    case HwType:    return hardware->type;
     }
+
+    Q_ASSERT(false);
+    return {};
 }
 
 QHash<int, QByteArray> Ohm::roleNames() const {

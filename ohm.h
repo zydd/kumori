@@ -24,13 +24,22 @@ public:
     static QObject *instance(QQmlEngine *, QJSEngine *) {
         return new Ohm; }
 
+    Q_INVOKABLE int getIndex(QString path) {
+        return m_sensorId[path]; }
+    Q_INVOKABLE qreal getValue(int index) {
+        return m_sensorData[index]; }
+
 private:
     enum Roles {
         IdRole = Qt::UserRole + 1,
         PathRole,
         NameRole,
         TypeRole,
-        ValueRole
+        ValueRole,
+        HwId,
+        HwPath,
+        HwName,
+        HwType
     };
     struct HardwareInfo {
         QString id;
@@ -43,6 +52,7 @@ private:
         QString identifier;
         QString name;
         QString type;
+        QString parent;
     };
 
     QHash<int, QByteArray> m_roleNames;
@@ -59,7 +69,7 @@ private:
 
     QVector<HardwareInfo> m_hardware;
     QVector<SensorInfo> m_sensors;
-    QVector<float> m_sensorData;
+    QVector<qreal> m_sensorData;
     QMap<QString, int> m_sensorId;
 
     friend QDebug operator<<(QDebug dbg, Ohm::HardwareInfo const& hi);
@@ -75,6 +85,9 @@ private:
 
 private slots:
     void update();
+
+signals:
+    void indexChanged();
 
     // QAbstractItemModel interface
 public:

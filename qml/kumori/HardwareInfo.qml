@@ -8,17 +8,7 @@ ListView {
     implicitWidth: 300
     visible: count > 0
 
-    property int updateInterval: Ohm.updateInterval
-    property bool autoUpdate: Ohm.autoUpdate
     property color textColor: 'white'
-
-    Component.onCompleted: {
-        Ohm.setUpdateInterval(updateInterval)
-        Ohm.setAutoUpdate(autoUpdate)
-
-        updateIntervalChanged.connect(() => Ohm.setUpdateInterval(updateInterval))
-        autoUpdateChanged.connect(() => Ohm.setAutoUpdate(autoUpdate))
-    }
 
     model: Ohm
     delegate: Item {
