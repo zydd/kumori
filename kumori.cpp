@@ -22,11 +22,11 @@ Kumori::Kumori(QStringList args):
     Q_ASSERT(!m_instance);
     m_instance = this;
 
-    addConfig("appImportDir", qApp->applicationDirPath() + "/qml");
+    addConfig("appImportDir", qApp->applicationDirPath() + "/qml", false);
     addConfig("userImportDir",
               QStringLiteral("%1/%2/desktop")
               .arg(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
-              .arg(qApp->applicationName()));
+              .arg(qApp->applicationName()), false);
 }
 
 QString Kumori::config(QString const& key) {
@@ -125,7 +125,7 @@ void Kumori::playPause() {
 #endif
 }
 
-void Kumori::addConfig(QString key, QVariant const& defaultValue, bool setDefault, bool ignoreArgs) {
+void Kumori::addConfig(QString const& key, QVariant const& defaultValue, bool setDefault, bool ignoreArgs) {
     if (key.isEmpty())
         return;
 
@@ -150,19 +150,24 @@ void Kumori::addConfig(QString key, QVariant const& defaultValue, bool setDefaul
 
     QQmlPropertyMap *obj = this;
     for (int i = 0; i < keys.size() - 1; ++i) {
-        if (obj->contains(keys[i])) {
-            Q_ASSERT_X(obj->value(keys[i]).type() == qMetaTypeId<QObject *>(),
-                       "Kumori::addConfig()", obj->value(keys[i]).typeName());
-
+        if (obj->contains(keys[i]) && obj->value(keys[i]).type() == qMetaTypeId<QObject *>()) {
             obj = obj->value(keys[i]).value<QQmlPropertyMap *>();
         } else {
-            auto sub = new QQmlPropertyMap;
+            auto sub = new Group(keys.mid(0, i+1).join('.'));
             obj->insert(keys[i], QVariant::fromValue<QObject *>(sub));
             obj = sub;
         }
     }
 
-    Q_ASSERT(!obj->contains(keys.last()));
-
     obj->insert(keys.last(), config);
+}
+
+QVariant Kumori::updateValue(const QString &key, const QVariant &input) {
+    m_config.setValue("config/" + key, input);
+    return input;
+}
+
+QVariant Kumori::Group::updateValue(const QString &key, const QVariant &input) {
+    m_config.setValue(QStringLiteral("config/%1.%2").arg(m_prefix).arg(key), input);
+    return input;
 }

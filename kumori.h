@@ -12,6 +12,16 @@ class Kumori : public QQmlPropertyMap {
     Q_OBJECT
 
 public:
+    struct Group : public QQmlPropertyMap {
+        QString m_prefix;
+        QSettings m_config;
+        Group(QString const& prefix):
+            QQmlPropertyMap(this, nullptr),
+            m_prefix(prefix)
+        { }
+        QVariant updateValue(const QString &key, const QVariant &input) override;
+    };
+
     Kumori(QStringList args);
 
     static Kumori *instance() {
@@ -30,6 +40,9 @@ public:
     Q_INVOKABLE void drawOverDesktop(QQuickWindow *window);
     Q_INVOKABLE void drawUnderDesktop(QQuickWindow *window);
 
+    Q_INVOKABLE void addConfig(QString const& key, QVariant const& defaultValue) {
+        addConfig(key, defaultValue, true, false); }
+
 public slots:
     void clearComponentCache();
     void playPause();
@@ -41,8 +54,11 @@ private:
     QPointer<QQmlApplicationEngine> m_engine;
     QStringList m_args;
 
-    void addConfig(QString key, QVariant const& defaultValue = {},
-                   bool setDefault = false, bool ignoreArgs = false);
+    void addConfig(QString const& key, QVariant const& defaultValue,
+                   bool setDefault, bool ignoreArgs = false);
+
+protected:
+    QVariant updateValue(const QString &key, const QVariant &input) override;
 
 public: // QtCreator autocomplete
     enum Properties {
