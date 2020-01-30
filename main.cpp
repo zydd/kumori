@@ -16,12 +16,12 @@
 #endif
 
 QString userImportDir() {
-    QDir dir(Kumori::instance()->config("userImportDir"));
+    QDir dir(Kumori::string("userImportDir"));
     dir.mkpath(dir.path());
 
     QFile root(dir.filePath("Root.qml"));
     if (! root.exists())
-        QFile::copy(Kumori::config("appImportDir") + "/Root.qml", root.fileName());
+        QFile::copy(Kumori::string("appImportDir") + "/Root.qml", root.fileName());
 
     return dir.path();
 }
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     Kumori kumori(app.arguments());
 
     auto const userImports = userImportDir();
-    auto const qmlDir = Kumori::config("appImportDir");
+    auto const qmlDir = Kumori::string("appImportDir");
     auto const url = QUrl::fromLocalFile(qmlDir + "/main.qml");
 
     QQmlApplicationEngine engine;
@@ -69,8 +69,9 @@ int main(int argc, char *argv[]) {
                      window, qOverload<QRect const&>(&QWindow::setGeometry));
 
     auto watcher = new QFileSystemWatcher;
+    auto const monitoredFileTypes = Kumori::config("monitoredFileTypes").toStringList();
 
-    auto watchDir = [watcher](QString dir) {
+    auto watchDir = [watcher, &monitoredFileTypes](QString dir) {
         watcher->addPath(dir);
 
         for (QDirIterator iter(dir, QDir::Dirs | QDir::NoDotAndDotDot,
@@ -78,17 +79,18 @@ int main(int argc, char *argv[]) {
             auto dir = iter.next();
 
             watcher->addPath(dir);
-            for (QFileInfo const& e : QDir(dir).entryInfoList({"*.qml"}, QDir::Files))
+            for (QFileInfo const& e : QDir(dir).entryInfoList(monitoredFileTypes, QDir::Files))
                 watcher->addPath(e.filePath());
         }
     };
 
-    QObject::connect(watcher, &QFileSystemWatcher::directoryChanged, [watcher](QString const& path){
+    QObject::connect(watcher, &QFileSystemWatcher::directoryChanged,
+                     [watcher, &monitoredFileTypes](QString const& path){
         QDir dir(path);
 
         for (QFileInfo const& e : dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
             watcher->addPath(e.filePath());
-        for (QFileInfo const& e : dir.entryInfoList({"*.qml"}, QDir::Files))
+        for (QFileInfo const& e : dir.entryInfoList(monitoredFileTypes, QDir::Files))
             watcher->addPath(e.filePath());
     });
     QObject::connect(watcher, SIGNAL(fileChanged(QString)), window, SLOT(reload()));

@@ -10,7 +10,7 @@ Item {
         id: txt
 
         font.pixelSize: parent.height
-        font.family: '衡山毛筆フォント行書,Dejima,YOzFontK,MS Mincho'
+        font.family: 'Dejima,衡山毛筆フォント行書,YOzFontK,MS Mincho'
         font.weight: Font.Black
 
         Timer {

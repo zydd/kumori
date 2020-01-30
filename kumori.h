@@ -34,14 +34,16 @@ public:
         return instance();
     }
 
-    static QString config(QString const& key);
+    static QVariant config(QString const& key);
+    static QString string(QString const& key) {
+        return config(key).toString(); }
 
     Q_INVOKABLE void ignoreAeroPeek(QQuickWindow *window);
     Q_INVOKABLE void drawOverDesktop(QQuickWindow *window);
     Q_INVOKABLE void drawUnderDesktop(QQuickWindow *window);
 
     Q_INVOKABLE void addConfig(QString const& key, QVariant const& defaultValue) {
-        addConfig(key, defaultValue, true, false); }
+        addConfig(key, defaultValue, false, false); }
 
 public slots:
     void clearComponentCache();

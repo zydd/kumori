@@ -4,6 +4,7 @@ CONFIG += c++17
 LIBS += -luser32 -ldwmapi -lwbemuuid -lgdi32
 DEFINES += NTDDI_WIN7=0x06010000 _WIN32_WINNT_WIN7=0x0601 WINVER=0x0601
 
+
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
 # depend on your compiler). Refer to the documentation for the

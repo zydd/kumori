@@ -22,14 +22,15 @@ Kumori::Kumori(QStringList args):
     Q_ASSERT(!m_instance);
     m_instance = this;
 
-    addConfig("appImportDir", qApp->applicationDirPath() + "/qml", false);
+    addConfig("appImportDir", qApp->applicationDirPath() + "/qml");
     addConfig("userImportDir",
               QStringLiteral("%1/%2/desktop")
               .arg(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
-              .arg(qApp->applicationName()), false);
+              .arg(qApp->applicationName()));
+    addConfig("monitoredFileTypes", QStringList{"*.qml", "*.vert", "*.frag"});
 }
 
-QString Kumori::config(QString const& key) {
+QVariant Kumori::config(const QString &key) {
     auto keys = key.split('.');
 
     QQmlPropertyMap *obj = instance();
@@ -37,7 +38,7 @@ QString Kumori::config(QString const& key) {
     for (int i = 0; i < keys.size() - 1 && obj; ++i)
         obj = obj->value(keys[i]).value<QQmlPropertyMap *>();
 
-    return obj ? obj->value(keys.last()).toString() : QString();
+    return obj ? obj->value(keys.last()) : QVariant();
 }
 
 void Kumori::ignoreAeroPeek(QQuickWindow *window) {
