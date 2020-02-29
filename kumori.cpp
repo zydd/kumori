@@ -3,6 +3,7 @@
 #include <qcoreapplication.h>
 #include <qdebug.h>
 #include <qdesktopservices.h>
+#include <qdir.h>
 #include <qfilesystemwatcher.h>
 #include <qqmlengine.h>
 #include <qquickwindow.h>
@@ -22,7 +23,7 @@ Kumori::Kumori(QStringList args):
     Q_ASSERT(!m_instance);
     m_instance = this;
 
-    addConfig("appImportDir", qApp->applicationDirPath() + "/qml");
+    addConfig("appImportDir", QDir::fromNativeSeparators(qApp->applicationDirPath()) + "/qml");
     addConfig("userImportDir",
               QStringLiteral("%1/%2/desktop")
               .arg(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
