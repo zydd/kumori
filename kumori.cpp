@@ -103,6 +103,19 @@ void Kumori::drawUnderDesktop(QQuickWindow *window) {
 #endif
 }
 
+QByteArray Kumori::readFile(QUrl url) {
+    if (url.isLocalFile()) {
+        QFile file(url.toLocalFile());
+        if (file.open(QFile::ReadOnly))
+            return file.readAll();
+        else
+            qDebug() << "Kumori::readFile(): failed to open file" << url;
+    }
+
+    return {};
+}
+
+
 void Kumori::clearComponentCache() {
     if (m_engine)
         m_engine->clearComponentCache();

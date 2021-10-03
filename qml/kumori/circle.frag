@@ -1,3 +1,10 @@
+#ifdef GL_ES
+precision mediump int;
+precision mediump float;
+#endif
+
+#define PI 3.14159265358979
+
 uniform float qt_Opacity;
 varying vec2 qt_TexCoord0;
 uniform float ratio;
@@ -49,8 +56,12 @@ float noise(float t) {
     return mix(hash11(i) * f, hash11(i+1.0) * (f - 1.0), f);
 }
 
+vec3 sstep(float thr, vec3 x) {
+    return sin(clamp((x - thr) * 20.0, -PI*0.5, PI*0.5));
+}
+
 void main() {
-    vec2 coord = (vec2(2.0,-2.0) * qt_TexCoord0 + vec2(-1.0 , 1.0)) * 6.0;
+    vec2 coord = (vec2(2.0, -2.0) * qt_TexCoord0 + vec2(-1.0, 1.0)) * 6.0;
     coord.x *= ratio;
 
     float rho2c = length(coord + dir);
@@ -58,7 +69,9 @@ void main() {
     float rho2y = length(coord - dir);
 
     vec3 cmy = vec3(rho2c, rho2m, rho2y);
-    cmy = 1.0/(pow(cmy - radius, vec3(60.0)) + 1.0);
+//    cmy = 1.0/(pow(cmy - radius, vec3(30.0)) + 1.0);
+    cmy = sstep(radius - 1.0, cmy) - sstep(radius + 1.0, cmy);
+//    cmy = sstep(3.0, cmy);
 
     vec3 rgb = vec3(1.0) - cmy;
     float alpha = max(max(cmy.x, cmy.y), cmy.z);

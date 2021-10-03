@@ -32,7 +32,7 @@ vec3 fsrgb3(vec3 c){
 }
 
 vec3 scanline(vec3 src, float y) {
-    y = abs((int(y) % 4) - 1);
+    y = abs((int(y - 1) % 3) - 1);
     float y_i = 2 - y;
     return src * y + clamp(src * y_i - 1, 0, 0.8);
 }

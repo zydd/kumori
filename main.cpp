@@ -61,8 +61,8 @@ int main(int argc, char *argv[]) {
     if (engine.rootObjects().empty())
         QCoreApplication::exit(-1);
 
+    Q_ASSERT(!engine.rootObjects().empty());
     auto window = qobject_cast<QWindow *>(engine.rootObjects()[0]);
-    Q_ASSERT(window);
 
     window->setGeometry(window->screen()->availableGeometry());
     QObject::connect(window->screen(), &QScreen::availableGeometryChanged,

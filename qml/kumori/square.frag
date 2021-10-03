@@ -1,3 +1,4 @@
+precision highp float;
 uniform sampler2D source;
 uniform sampler2D bg;
 varying vec2 qt_TexCoord0;

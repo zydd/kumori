@@ -45,6 +45,8 @@ public:
     Q_INVOKABLE void addConfig(QString const& key, QVariant const& defaultValue) {
         addConfig(key, defaultValue, false, false); }
 
+    Q_INVOKABLE QByteArray readFile(QUrl url);
+
 public slots:
     void clearComponentCache();
     void playPause();

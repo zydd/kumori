@@ -1,5 +1,5 @@
 QT += qml quick winextras
-CONFIG += lrelease embed_translations
+#CONFIG += lrelease embed_translations
 CONFIG += c++17
 LIBS += -luser32 -ldwmapi -lwbemuuid -lgdi32
 DEFINES += NTDDI_WIN7=0x06010000 _WIN32_WINNT_WIN7=0x0601 WINVER=0x0601
