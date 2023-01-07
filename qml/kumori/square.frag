@@ -1,4 +1,8 @@
-precision highp float;
+#ifdef GL_ES
+precision mediump int;
+precision mediump float;
+#endif
+
 uniform sampler2D source;
 uniform sampler2D bg;
 varying vec2 qt_TexCoord0;
