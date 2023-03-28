@@ -64,8 +64,8 @@ int main(int argc, char *argv[]) {
     Q_ASSERT(!engine.rootObjects().empty());
     auto window = qobject_cast<QWindow *>(engine.rootObjects()[0]);
 
-    window->setGeometry(window->screen()->availableGeometry());
-    QObject::connect(window->screen(), &QScreen::availableGeometryChanged,
+    window->setGeometry(window->screen()->geometry());
+    QObject::connect(window->screen(), &QScreen::geometryChanged,
                      window, qOverload<QRect const&>(&QWindow::setGeometry));
 
     auto watcher = new QFileSystemWatcher;
