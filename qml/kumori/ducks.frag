@@ -35,11 +35,46 @@ mat2 rot(float a) {
     return mat2(c, s, -s, c);
 }
 
+vec3 plasma(float x) {
+    vec4 c0 = vec4(0.050383, 0.029803, 0.527975, 1.0);
+    vec4 c1 = vec4(0.494877, 0.01199, 0.657865, 1.0);
+    vec4 c2 = vec4(0.798216, 0.280197, 0.469538, 1.0);
+    vec4 c3 = vec4(0.973416, 0.585761, 0.25154, 1.0);
+    vec4 c4 = vec4(0.063536, 0.028426, 0.533124, 1.0);
+
+    float y = (x + 1.0) * 2.0;
+    vec4 c = mix(c0, c1, clamp(y, 0.0, 1.0));
+    c = mix(c, c2, clamp(y - 1.0, 0.0, 1.0));
+    c = mix(c, c3, clamp(y - 2.0, 0.0, 1.0));
+    c = mix(c, c4, clamp(y - 3.0, 0.0, 1.0));
+
+    return c.rgb;
+}
+
+vec3 twilight(float x) {
+    vec4 c0 = vec4(0.88575016, 0.85000925, 0.88797365, 1.0);
+    vec4 c1 = vec4(0.38407269, 0.46139019, 0.73094665, 1.0);
+    vec4 c2 = vec4(0.18488036, 0.07942573, 0.21307652, 1.0);
+    vec4 c3 = vec4(0.69806082, 0.33828976, 0.32207479, 1.0);
+    vec4 c4 = vec4(0.88571155, 0.85002186, 0.88572539, 1.0);
+
+    float y = (x + 1.0) * 2.0;
+    vec4 c = mix(c0, c1, clamp(y, 0.0, 1.0));
+    c = mix(c, c2, clamp(y - 1.0, 0.0, 1.0));
+    c = mix(c, c3, clamp(y - 2.0, 0.0, 1.0));
+    c = mix(c, c4, clamp(y - 3.0, 0.0, 1.0));
+
+    return c.rgb;
+}
+
 vec3 getColor(int i, float m, float col) {
     float ci = float(i) + 1.0 - log2(.5 * log2(m * col)) + col_shift;
     return vec3(0.5 + 0.5 * cos(6.0 * ci),
                 0.5 + 0.5 * cos(6.0 * ci + 0.4),
                 0.5 + 0.5 * cos(6.0 * ci + 0.87931));
+//    return vec3(0.5 + 0.5 * cos(6.0 * ci + 0.4),
+//                0.5 + 0.5 * cos(6.0 * ci + 0.87931),
+//                0.5 + 0.5 * cos(6.0 * ci));
 }
 // non-standard branch cut, bad PI value too...
 vec2 cLog(vec2 a) {
@@ -149,9 +184,9 @@ void main() {
     vec3 color = fractal(uv2coord(qt_TexCoord0));
 #endif
 
+#if SHOW_MAP
     vec2 mapc = qt_TexCoord0 - vec2(1.0 - map_size/ratio, 1.0 - map_size);
     float mapd = length(vec2(mapc.x * ratio, mapc.y));
-
     if (mapd < map_size) {
         vec2 uv = mapc + vec2(0.5, 0.5);
         vec2 coord = uv * vec2(2.0, -2.0) + vec2(-1.0, 1.0);
@@ -162,6 +197,7 @@ void main() {
         if (mapd < 2.0 * max(pixel.x, pixel.y))
         color = 1.0 - color;
     }
+#endif
 
     gl_FragColor = vec4(color, 1.0);
 }

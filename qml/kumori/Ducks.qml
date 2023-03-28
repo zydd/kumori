@@ -3,7 +3,6 @@ import kumori 0.1
 
 Item {
     id: root
-    anchors.fill: parent
 
     property int multisample: 6
     property bool low_spec: false
@@ -11,6 +10,7 @@ Item {
     property string header: `
         #define MULTISAMPLE_W ${timer.running ? 1 : multisample}
         #define MULTISAMPLE_H ${timer.running ? 1 : multisample}
+        #define SHOW_MAP ${map_size > 0 ? 1 : 0}
         #define fractal ducks
     `
     property string shader
@@ -209,7 +209,7 @@ Item {
     Keys.onReleased: {
         switch(event.key) {
             case Qt.Key_H:
-                map_size = map_size == 0 ? 0.4 : 0
+                map_size = map_size == 0 ? 0.3 : 0
                 return
 
             case Qt.Key_G:
@@ -221,7 +221,9 @@ Item {
                 }
 
                 map_size = 0
-                fractal.grabToImage((img) => img.saveToFile(`screenshots/irz,${c.x},${c.y},${center.x},${center.y},${zoom}.png`), Qt.size(1920, 1080))
+                var filename = `screenshots/irz,${c.x},${c.y},${center.x},${center.y},${zoom}.png`
+                console.log(`Screenshot: ${filename}`)
+                fractal.grabToImage((img) => img.saveToFile(filename))
                 return
 
             case Qt.Key_C:
@@ -283,12 +285,12 @@ Item {
     }
 
     function preset() {
-        c = Qt.point(-0.45275299999999363, 4.700717999525816)
-        center = Qt.point(-0.634196, -0.657495)
-        zoom = 0.4121623272210069
-        col = 1.55
-        iter = 72
-        col_shift = 1.79
+        c = Qt.point(-0.623048, 4.61666)
+        center = Qt.point(-2.61087, 0.40818)
+        zoom = 0.12224574942781402
+        col = 0.98236
+        iter = 181
+        col_shift = 0.15999999999999998
         rotation = 0
         multisample = 6
     }
