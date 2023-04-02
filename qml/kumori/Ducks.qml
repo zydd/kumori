@@ -236,83 +236,100 @@ Item {
     }
 
     Keys.onPressed: {
-        param.multisample = 1
+        // No repeat, no redraw
+        if (!event.isAutoRepeat) switch (event.key) {
+        case Qt.Key_H:
+            param.map_size = param.map_size == 0 ? 0.3 : 0
+            return
 
+        case Qt.Key_G:
+            param.multisample = 4
+            param.map_size = 0
+
+            let size = Qt.size(fractal.width * 2, fractal.height * 2)
+            var filename = `${Kumori.currentDir}/screenshots/irz,${param.c_x},${param.c_y},${param.center_x},${param.center_y},${param.zoom}.jpg`
+
+            fractal.grabToImage((img) => {
+                                    console.log(`screenshot: ${filename}`)
+                                    img.saveToFile(filename)
+                                }, size)
+            return
+
+        case Qt.Key_P:
+            preset_ducks()
+            return
+
+        case Qt.Key_Tab:
+            paramWindow.visible = !paramWindow.visible
+            return
+
+        case Qt.Key_F:      param.low_spec = !param.low_spec; return
+        }
+
+        param.multisample = 1
         if (!param.low_spec)
             mstimer.restart()
 
-        if (event.isAutoRepeat)
-            return
+        // Redraw
 
-        switch(event.key) {
-            case Qt.Key_Up:     param.a.y =  1; break
-            case Qt.Key_Down:   param.a.y = -1; break
-            case Qt.Key_Left:   param.a.x = -1; break
-            case Qt.Key_Right:  param.a.x =  1; break
-            case Qt.Key_Z:      param.zoom_a +=  1; break
-            case Qt.Key_X:      param.zoom_a += -1; break
-            case Qt.Key_V:      param.map_zoom_a +=  1; break
-            case Qt.Key_B:      param.map_zoom_a += -1; break
-            case Qt.Key_I:      param.center_a.y +=  1; break
-            case Qt.Key_K:      param.center_a.y += -1; break
-            case Qt.Key_J:      param.center_a.x += -1; break
-            case Qt.Key_L:      param.center_a.x +=  1; break
-            case Qt.Key_R:      param.rot_a += -1; break
-            case Qt.Key_T:      param.rot_a +=  1; break
-
-            // case Qt.Key_Escape: Qt.quit()
-
-            case Qt.Key_M:      return
-            case Qt.Key_N:      return
-            default:            return
-        }
-    }
-
-    Keys.onReleased: {
-        switch(event.key) {
-        case Qt.Key_1:      param.iter = Math.max(1, param.iter - 1); break
-        case Qt.Key_2:      param.iter += 1; break
-        case Qt.Key_3:      param.pre = Math.max(1, param.pre - 1); break
-        case Qt.Key_4:      param.pre += 1; break
-        case Qt.Key_Q:      param.col -= 1e-3; break
-        case Qt.Key_W:      param.col += 1e-3; break
+        switch (event.key) {
+        case Qt.Key_1:      param.iter = Math.max(1, param.iter - 1); return
+        case Qt.Key_2:      param.iter += 1; return
+        case Qt.Key_3:      param.pre = Math.max(1, param.pre - 1); return
+        case Qt.Key_4:      param.pre += 1; return
+        case Qt.Key_Q:      param.col -= 1e-3; return
+        case Qt.Key_W:      param.col += 1e-3; return
         case Qt.Key_A:
             param.col_shift = (param.col_shift - 0.05 < 0) ?
                         param.col_shift - 0.05 + 2*Math.PI :
                         param.col_shift - 0.05
-            break
+            return
         case Qt.Key_S:
             param.col_shift = (param.col_shift + 0.05 > 2*Math.PI) ?
                         param.col_shift + 0.05 - 2*Math.PI :
                         param.col_shift + 0.05
-            break
+            return
         }
 
+        if (!event.isAutoRepeat) switch (event.key) {
+            case Qt.Key_Up:     param.a.y =  1; break
+            case Qt.Key_Down:   param.a.y = -1; break
+            case Qt.Key_Left:   param.a.x = -1; break
+            case Qt.Key_Right:  param.a.x =  1; break
+            case Qt.Key_Z:      param.zoom_a =  1; break
+            case Qt.Key_X:      param.zoom_a = -1; break
+            case Qt.Key_V:      param.map_zoom_a =  1; break
+            case Qt.Key_B:      param.map_zoom_a = -1; break
+            case Qt.Key_I:      param.center_a.y =  1; break
+            case Qt.Key_K:      param.center_a.y = -1; break
+            case Qt.Key_J:      param.center_a.x = -1; break
+            case Qt.Key_L:      param.center_a.x =  1; break
+            case Qt.Key_R:      param.rot_a = -1; break
+            case Qt.Key_T:      param.rot_a =  1; break
+            case Qt.Key_O:      param.rotation += Math.PI/2; break
+
+            case Qt.Key_Period:
+                if (param.main_image === 'fractal') {
+                    param.main_image = 'julia'
+                    param.mini_image = 'fractal'
+                } else {
+                    param.main_image = 'fractal'
+                    param.mini_image = 'julia'
+                }
+                var t
+                t = param.center_x; param.center_x = param.c_x; param.c_x = t
+                t = param.center_y; param.center_y = param.c_y; param.c_y = t
+                t = param.zoom; param.zoom = param.map_zoom; param.map_zoom = t
+                console.log('main:', param.main_image, 'mini:', param.mini_image)
+                break
+        }
+    }
+
+    Keys.onReleased: {
         if (event.isAutoRepeat)
             return
 
-        switch(event.key) {
-            case Qt.Key_H:
-                param.map_size = param.map_size == 0 ? 0.3 : 0
-                break
-
-            case Qt.Key_G:
-                if (param.low_spec) {
-                    if (param.multisample < 4)
-                        param.multisample = 4
-                } else if (param.multisample < 6) {
-                    param.multisample = 6
-                }
-
-                param.map_size = 0
-                var filename = `${Kumori.currentDir}/screenshots/irz,${param.c_x},${param.c_y},${param.center_x},${param.center_y},${param.zoom}.png`
-
-                fractal.grabToImage((img) => {
-                                        console.log(`screenshot: ${filename}`)
-                                        img.saveToFile(filename)
-                                    })
-                break
-
+        switch (event.key) {
             case Qt.Key_C:
                 param.center_x = 0
                 param.center_y = 0
@@ -336,14 +353,6 @@ Item {
                 param.multisample = 6
                 break
 
-            case Qt.Key_P:
-                preset_ducks()
-                break
-
-            case Qt.Key_Tab:
-                paramWindow.visible = !paramWindow.visible
-                break
-
             case Qt.Key_Up:
             case Qt.Key_Down:   param.a.y = 0; param.v.y = 0; break
             case Qt.Key_Left:
@@ -358,22 +367,6 @@ Item {
             case Qt.Key_L:      param.center_a.x = 0; param.center_v.x = 0; break
             case Qt.Key_R:
             case Qt.Key_T:      param.rot_a = 0; param.rot_v = 0; break
-            case Qt.Key_O:      param.rotation += Math.PI/2; break
-            case Qt.Key_F:      param.low_spec = !param.low_spec; break
-            case Qt.Key_Period:
-                if (param.main_image === 'fractal') {
-                    param.main_image = 'julia'
-                    param.mini_image = 'fractal'
-                } else {
-                    param.main_image = 'fractal'
-                    param.mini_image = 'julia'
-                }
-                var t
-                t = param.center_x; param.center_x = param.c_x; param.c_x = t
-                t = param.center_y; param.center_y = param.c_y; param.c_y = t
-                t = param.zoom; param.zoom = param.map_zoom; param.map_zoom = t
-                console.log('main:', param.main_image, 'mini:', param.mini_image)
-                break
         }
     }
 
