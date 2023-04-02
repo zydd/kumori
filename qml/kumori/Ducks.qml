@@ -276,8 +276,16 @@ Item {
         case Qt.Key_4:      param.pre += 1; break
         case Qt.Key_Q:      param.col -= 1e-3; break
         case Qt.Key_W:      param.col += 1e-3; break
-        case Qt.Key_A:      param.col_shift -= 1e-2; break
-        case Qt.Key_S:      param.col_shift += 1e-2; break
+        case Qt.Key_A:
+            param.col_shift = (param.col_shift - 0.05 < 0) ?
+                        param.col_shift - 0.05 + 2*Math.PI :
+                        param.col_shift - 0.05
+            break
+        case Qt.Key_S:
+            param.col_shift = (param.col_shift + 0.05 > 2*Math.PI) ?
+                        param.col_shift + 0.05 - 2*Math.PI :
+                        param.col_shift + 0.05
+            break
         }
 
         if (event.isAutoRepeat)
