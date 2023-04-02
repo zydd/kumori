@@ -6,6 +6,7 @@ uniform float esc;
 uniform int pre;
 uniform float col;
 uniform float col_shift;
+uniform float col_variation;
 uniform float zoom;
 uniform float map_size;
 uniform float map_zoom;
@@ -117,32 +118,55 @@ vec3 color_norm_itr_count(vec2 z, int i, float mean) {
     float sit = float(i) - log2(log2(dot(z,z))/(log2(esc)))/log2(k);
     vec3 color = vec3(0.0);
     if (i < iter)
-        color = 0.5 + 0.5*cos( 3.0 + sit*0.075*k + vec3(0.0,0.6,1.0));
+        color = 0.5 + 0.5*cos( 3.0 + sit*0.075*k + vec3(0.0, 0.4, 0.87931));
     return color;
 }
 
-vec3 color_cyclic_log_log(vec2 z, int i, float m) {
-    float ci = float(i) + 1.0 - log2(.5 * log2(m * col)) + col_shift;
+vec3 color_cyclic_log_log_yb(vec2 z, int i, float m) {
+    float ci = col_variation * (float(i) - log2(log2(m * col))) + col_shift;
+    return vec3(0.5 + 0.5 * cos(ci),
+                0.5 + 0.5 * cos(ci + 0.4),
+                0.5 + 0.5 * cos(ci + 0.87931));
+}
+
+vec3 color_cyclic_log_log_yb2(vec2 z, int i, float m) {
+    float ci = float(i) - log2(log2(m * col)) + col_shift;
     return vec3(0.5 + 0.5 * cos(6.0 * ci),
                 0.5 + 0.5 * cos(6.0 * ci + 0.4),
                 0.5 + 0.5 * cos(6.0 * ci + 0.87931));
-//    return vec3(0.5 + 0.5 * cos(6.0 * ci + 0.4),
-//                0.5 + 0.5 * cos(6.0 * ci + 0.87931),
-//                0.5 + 0.5 * cos(6.0 * ci));
+}
+
+vec3 color_cyclic_log_log_pg(vec2 z, int i, float m) {
+    float ci = float(i) - log2(log2(m * col)) + col_shift;
+    return vec3(0.5 + 0.5 * cos(6.0 * ci + 0.4),
+                0.5 + 0.5 * cos(6.0 * ci + 0.87931),
+                0.5 + 0.5 * cos(6.0 * ci));
 }
 
 vec3 color_combined(vec2 z, int i, float mean) {
     if (i < iter)
         return color_norm_itr_count(z, i, mean);
     else
-        return color_cyclic_log_log(z, i, mean);
+        return color_cyclic_log_log_yb(z, i, mean);
+}
+
+vec3 color_clamp_cyclic_log(vec2 z, int i, float m) {
+    return vec3(1.0-sin(float(i) - clamp(2.0 * log2(m * col), 0.0, 1.0) * pi*0.5 + col_shift));
+}
+
+vec3 color_cyclic_log(vec2 z, int i, float m) {
+    return vec3(0.5+0.5*sin(float(i) - log2(m * col) + col_shift));
+}
+
+vec3 color_iteration(vec2 z, int i, float mean) {
+    return vec3(float(i) / float(iter));
 }
 
 /***********************************************************************
  * Fractal
  */
 
-#define fractal_fn(z, c) clog(vec2(z.x, abs(z.y)))+c // ***** ducks
+// #define fractal_fn(z, c) clog(vec2(z.x, abs(z.y))) + c // ***** ducks
 // #define fractal_fn(z, c) cmul(abs(z), abs(z))+c // burning ship
 // #define fractal_fn(z, c) cmul(z,z)+c // mandelbrot
 
@@ -195,8 +219,7 @@ vec3 fractal(vec2 coord, vec2 c) {
         }
     }
     mean /= float(i - pre);
-    return color_combined(z, i, mean);
-    // return color_cyclic_log_log(z, i, mean);
+    return get_color(z, i, mean);
 }
 
 
@@ -220,12 +243,8 @@ vec3 julia(vec2 coord, vec2 c) {
      float ci =  1.0 - log2(.5*log2(mean * 5.0));
     //  return vec3( .5+.5*cos(6.*ci+0.5),.5+.5*cos(6.*ci + 0.33),.5+.5*cos(6.*ci + 0.32) );
     // return vec3(0.55 + 0.45 * sin(clamp(1.95 * (mean - 0.9), 0.0, 1.0) * pi * 4.0));
-        
-    // return color_norm_itr_count(z, i, mean);
-    // return color_cyclic_log_log(z, i, mean);
-    return color_combined(z, i, mean);
-//    return vec3(sin(clamp(2.0 * log2(mean), 0.0, 1.0) * pi*0.5));
-//    return vec3(sin(1.0 - log2(mean)));
+
+    return get_color(z, i, mean);
 }
 
 vec2 uv2coord(vec2 uv) {

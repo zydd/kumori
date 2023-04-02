@@ -23,7 +23,10 @@ Kumori::Kumori(QStringList args):
     Q_ASSERT(!m_instance);
     m_instance = this;
 
-    addConfig("appImportDir", QDir::fromNativeSeparators(qApp->applicationDirPath()) + "/qml");
+    auto appDir = QDir::fromNativeSeparators(qApp->applicationDirPath());
+    addConfig("currentDir", QDir::currentPath());
+    addConfig("appDir", appDir);
+    addConfig("appImportDir", appDir + "/qml");
     addConfig("userImportDir",
               QStringLiteral("%1/%2/desktop")
               .arg(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
