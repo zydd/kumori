@@ -1,17 +1,19 @@
 import QtQuick 2.12
+import Qt.labs.settings 1.0
 import kumori 0.1
 
 Item {
     id: root
 
-    property int multisample: 6
+    property int multisample: 4
     property bool low_spec: false
 
     property string header: `
         #define MULTISAMPLE_W ${timer.running ? 1 : multisample}
         #define MULTISAMPLE_H ${timer.running ? 1 : multisample}
         #define SHOW_MAP ${map_size > 0 ? 1 : 0}
-        #define fractal ducks
+        #define main_image ${main_image}
+        #define mini_image ${mini_image}
     `
     property string shader
 
@@ -26,6 +28,24 @@ Item {
     property real map_size: 0
     property real map_zoom: 0.3
     property real rotation: 0
+    property string main_image: 'julia'
+    property string mini_image: 'fractal'
+
+    Settings {
+        property alias c: root.c
+        property alias center: root.center
+        property alias zoom: root.zoom
+        property alias iter: root.iter
+        property alias esc: root.esc
+        property alias pre: root.pre
+        property alias col: root.col
+        property alias col_shift: root.col_shift
+        property alias map_size: root.map_size
+        property alias map_zoom: root.map_zoom
+        property alias rotation: root.rotation
+        property alias main_image: root.main_image
+        property alias mini_image: root.mini_image
+    }
 
     ShaderEffect {
         id: fractal
@@ -63,23 +83,26 @@ Item {
     property real rot_v
 
     Timer {
+        id: mstimer
+        interval: 800
+        onTriggered: root.multisample = 4
+    }
+
+    Timer {
         id: timer
         running:
-            Math.abs(v.x) + Math.abs(v.y) +
-            Math.abs(a.x) + Math.abs(a.y) +
-            Math.abs(zoom_v) + Math.abs(zoom_a) +
-            Math.abs(zoom_v) + Math.abs(map_zoom_a) +
-            Math.abs(rot_v) + Math.abs(rot_a) +
-            Math.abs(center_v.x) + Math.abs(center_v.y) +
-            Math.abs(center_a.x) + Math.abs(center_a.y) > 1e-20
+            Math.abs(a.x) + Math.abs(a.y) + Math.abs(zoom_a) + Math.abs(map_zoom_a)
+            + Math.abs(rot_a) + Math.abs(center_a.x) + Math.abs(center_a.y) > 0.5
         interval: 16
         repeat: true
 
         onRunningChanged:
-            if (running)
+            if (running) {
+                mstimer.stop()
+            } else {
                 print('c:', c, 'zoom:', zoom, 'center:', center, 'col', col, 'col_shift', col_shift, 'iter', iter)
-            else if (!root.low_spec)
-                root.multisample = 4
+                mstimer.restart()
+            }
 
         onTriggered: {
             zoom_v += zoom_a * 0.005
@@ -94,22 +117,27 @@ Item {
             rotation += rot_v
             rot_v *= 0.8
 
-            v.x += a.x * 0.0005
-            v.y += a.y * 0.0005
+            v.x += a.x * 0.001
+            v.y += a.y * 0.001
+            v.x = clamp(v.x, -0.005, 0.005)
+            v.y = clamp(v.y, -0.005, 0.005)
 
             c.x += v.x * map_zoom
             c.y += v.y * map_zoom
 
-            v.x *= 0.8
-            v.y *= 0.8
+            center_v.x += center_a.x * 0.001
+            center_v.y += center_a.y * 0.001
+            center_v.x = clamp(center_v.x, -0.02, 0.02)
+            center_v.y = clamp(center_v.y, -0.02, 0.02)
 
-            center_v.x += center_a.x * 0.005 * zoom
-            center_v.y += center_a.y * 0.005 * zoom
+            translate(center_v.x * zoom, center_v.y * zoom)
 
-            translate(center_v.x , center_v.y)
+//            center_v.x *= 0.8
+//            center_v.y *= 0.8
+        }
 
-            center_v.x *= 0.8
-            center_v.y *= 0.8
+        function clamp(value, min, max) {
+          return Math.min(Math.max(value, min), max);
         }
     }
 
@@ -138,13 +166,13 @@ Item {
         onPressed: clickStart = Qt.point(mouse.x, mouse.y)
 
         onPositionChanged: {
+            multisample = 1
             var dx = (mouse.x - clickStart.x) / width * 2 * width / height
             var dy = -(mouse.y - clickStart.y) / height * 2
 
             translate(-dx * zoom, -dy * zoom)
 
             clickStart = Qt.point(mouse.x, mouse.y)
-            multisample = 1
         }
 
         onWheel: {
@@ -181,11 +209,17 @@ Item {
     }
 
     Keys.onPressed: {
+        multisample = 1
+        mstimer.restart()
+
+        if (event.isAutoRepeat)
+            return
+
         switch(event.key) {
-            case Qt.Key_Up:     a.y +=  1; break
-            case Qt.Key_Down:   a.y += -1; break
-            case Qt.Key_Left:   a.x += -1; break
-            case Qt.Key_Right:  a.x +=  1; break
+            case Qt.Key_Up:     a.y =  1; break
+            case Qt.Key_Down:   a.y = -1; break
+            case Qt.Key_Left:   a.x = -1; break
+            case Qt.Key_Right:  a.x =  1; break
             case Qt.Key_Z:      zoom_a +=  1; break
             case Qt.Key_X:      zoom_a += -1; break
             case Qt.Key_V:      map_zoom_a +=  1; break
@@ -203,10 +237,24 @@ Item {
             case Qt.Key_N:      return
             default:            return
         }
-        multisample = 1
     }
 
     Keys.onReleased: {
+        print(event.key)
+        switch(event.key) {
+        case Qt.Key_1:      iter = iter > 0 ? iter - 1 : iter; break
+        case Qt.Key_2:      iter += 1; break
+        case Qt.Key_3:      pre = pre > 0 ? pre - 1 : pre; break
+        case Qt.Key_4:      pre += 1; break
+        case Qt.Key_Q:      col -= 1e-3; break
+        case Qt.Key_W:      col += 1e-3; break
+        case Qt.Key_A:      col_shift -= 1e-2; break
+        case Qt.Key_S:      col_shift += 1e-2; break
+        }
+
+        if (event.isAutoRepeat)
+            return
+
         switch(event.key) {
             case Qt.Key_H:
                 map_size = map_size == 0 ? 0.3 : 0
@@ -255,44 +303,52 @@ Item {
         }
 
         switch(event.key) {
-            case Qt.Key_Up:     a.y -=  1; break
-            case Qt.Key_Down:   a.y -= -1; break
-            case Qt.Key_Left:   a.x -= -1; break
-            case Qt.Key_Right:  a.x -=  1; break
-            case Qt.Key_Z:      zoom_a -=  1; break
-            case Qt.Key_X:      zoom_a -= -1; break
-            case Qt.Key_V:      map_zoom_a -=  1; break
-            case Qt.Key_B:      map_zoom_a -= -1; break
-            case Qt.Key_I:      center_a.y -=  1; break
-            case Qt.Key_K:      center_a.y -= -1; break
-            case Qt.Key_J:      center_a.x -= -1; break
-            case Qt.Key_L:      center_a.x -=  1; break
-            case Qt.Key_R:      rot_a -= -1; break
-            case Qt.Key_T:      rot_a -=  1; break
-            case Qt.Key_1:      iter = iter > 0 ? iter - 1 : iter; break
-            case Qt.Key_2:      iter += 1; break
-            case Qt.Key_3:      pre = pre > 0 ? pre - 1 : pre; break
-            case Qt.Key_4:      pre += 1; break
-            case Qt.Key_Q:      col -= 1e-3; break
-            case Qt.Key_W:      col += 1e-3; break
-            case Qt.Key_A:      col_shift -= 1e-2; break
-            case Qt.Key_S:      col_shift += 1e-2; break
+            case Qt.Key_Up:
+            case Qt.Key_Down:   a.y = 0; v.y = 0; break
+            case Qt.Key_Left:
+            case Qt.Key_Right:  a.x = 0; v.x = 0; break
+            case Qt.Key_Z:
+            case Qt.Key_X:      zoom_a = 0; zoom_v = 0; break
+            case Qt.Key_V:
+            case Qt.Key_B:      map_zoom_a = 0; map_zoom_v = 0; break
+            case Qt.Key_I:
+            case Qt.Key_K:      center_a.y = 0; center_v.y = 0; break
+            case Qt.Key_J:
+            case Qt.Key_L:      center_a.x = 0; center_v.x = 0; break
+            case Qt.Key_R:
+            case Qt.Key_T:      rot_a = 0; rot_v = 0; break
             case Qt.Key_O:      rotation += Math.PI/2; break
             case Qt.Key_F:      root.low_spec = !root.low_spec; break
-            default:            return
+            case Qt.Key_Period:
+                if (main_image === 'fractal') {
+                    main_image = 'julia'
+                    mini_image = 'fractal'
+                } else {
+                    main_image = 'fractal'
+                    mini_image = 'julia'
+                }
+                var t
+                t = center; center = c; c = t
+                t = zoom; zoom = map_zoom; map_zoom = t
+                console.log('main:', main_image, 'mini:', mini_image)
+                break
+            default: return
         }
-        multisample = 0
     }
 
     function preset() {
         c = Qt.point(-0.623048, 4.61666)
         center = Qt.point(-2.61087, 0.40818)
         zoom = 0.12224574942781402
-        col = 0.98236
         iter = 181
+        pre = 0
+        col = 0.98236
         col_shift = 0.15999999999999998
         rotation = 0
-        multisample = 6
+        map_zoom = 0.12
+        multisample = 4
+        main_image = 'julia'
+        mini_image = 'fractal'
     }
 
     Component.onCompleted: {
