@@ -127,9 +127,7 @@ Item {
             if (running) {
                 mstimer.stop()
             } else {
-                print(
-                        'c:', fractal.c, 'zoom:', param.zoom, 'center:', fractal.center,
-                        'col', param.col, 'col_shift', param.col_shift, 'iter', param.iter)
+                console.log(JSON.stringify(param))
                 if (!param.low_spec)
                     mstimer.restart()
             }
@@ -247,7 +245,14 @@ Item {
             param.map_size = 0
 
             let size = Qt.size(fractal.width * 2, fractal.height * 2)
-            var filename = `${Kumori.currentDir}/screenshots/irz,${param.c_x},${param.c_y},${param.center_x},${param.center_y},${param.zoom}.jpg`
+            let timestamp = new Date().getTime()
+            var screenshotpath = `${Kumori.currentDir}/screenshots`
+            var filename = `${screenshotpath}/kd-${timestamp}.jpg`
+
+            var logline = `kd-${timestamp}.jpg: `
+            logline += JSON.stringify(param)
+            logline += '\n'
+            Kumori.appendLog(`file:///${screenshotpath}/params.txt`, logline)
 
             fractal.grabToImage((img) => {
                                     console.log(`screenshot: ${filename}`)
@@ -320,7 +325,6 @@ Item {
                 t = param.center_x; param.center_x = param.c_x; param.c_x = t
                 t = param.center_y; param.center_y = param.c_y; param.c_y = t
                 t = param.zoom; param.zoom = param.map_zoom; param.map_zoom = t
-                console.log('main:', param.main_image, 'mini:', param.mini_image)
                 break
         }
     }

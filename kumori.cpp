@@ -111,11 +111,28 @@ QByteArray Kumori::readFile(QUrl url) {
         QFile file(url.toLocalFile());
         if (file.open(QFile::ReadOnly))
             return file.readAll();
-        else
-            qDebug() << "Kumori::readFile(): failed to open file" << url;
     }
 
+    qWarning() << "Kumori::readFile(): failed to open file" << url;
     return {};
+}
+
+bool Kumori::appendLog(QUrl url, QString text) {
+    qDebug() << url;
+    auto ext = url.toLocalFile().split('.').last();
+
+    if (ext != "txt" && ext != "log") {
+        qWarning() << "this method can only be used for txt/log files:" << ext;
+        return false;
+    }
+
+    QFile file(url.toLocalFile());
+    if (!file.open(QFile::WriteOnly | QFile::Append)) {
+        qDebug() << "failed to open file" << url;
+        return false;
+    }
+
+    return file.write(text.toUtf8()) >= 0;
 }
 
 

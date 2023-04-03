@@ -46,6 +46,7 @@ public:
         addConfig(key, defaultValue, false, false); }
 
     Q_INVOKABLE QByteArray readFile(QUrl url);
+    Q_INVOKABLE bool appendLog(QUrl url, QString text);
 
 public slots:
     void clearComponentCache();
