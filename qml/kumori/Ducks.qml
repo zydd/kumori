@@ -132,35 +132,32 @@ Item {
             }
 
         onTriggered: {
-            param.zoom_v += param.zoom_a * 0.005
+            param.zoom_v += param.zoom_a * 0.0001
+            param.zoom_v = clamp(param.zoom_v, -0.03, 0.03)
             param.zoom *= 1 + param.zoom_v
-            param.zoom_v *= 0.8
 
-            param.map_zoom_v += param.map_zoom_a * 0.005
+            param.map_zoom_v += param.map_zoom_a * 0.0001
+            param.map_zoom_v = clamp(param.map_zoom_v, -0.03, 0.03)
             param.map_zoom *= 1 + param.map_zoom_v
-            param.map_zoom_v *= 0.8
 
-            param.rot_v += param.rot_a * 0.008
+            param.rot_v += param.rot_a * 0.0001
+            param.rot_v = clamp(param.rot_v, -0.01, 0.01)
             param.rotation += param.rot_v
-            param.rot_v *= 0.8
 
-            param.v.x += param.a.x * 0.001
-            param.v.y += param.a.y * 0.001
+            param.v.x += param.a.x * 0.0001
+            param.v.y += param.a.y * 0.0001
             param.v.x = clamp(param.v.x, -0.005, 0.005)
             param.v.y = clamp(param.v.y, -0.005, 0.005)
 
             param.c_x += param.v.x * param.map_zoom
             param.c_y += param.v.y * param.map_zoom
 
-            param.center_v.x += param.center_a.x * 0.001
-            param.center_v.y += param.center_a.y * 0.001
+            param.center_v.x += param.center_a.x * 0.0001
+            param.center_v.y += param.center_a.y * 0.0001
             param.center_v.x = clamp(param.center_v.x, -0.02, 0.02)
             param.center_v.y = clamp(param.center_v.y, -0.02, 0.02)
 
             translate(param.center_v.x * param.zoom, param.center_v.y * param.zoom)
-
-//            center_v.x *= 0.8
-//            center_v.y *= 0.8
         }
 
         function clamp(value, min, max) {
