@@ -21,6 +21,7 @@ Item {
 
     QtObject {
         id: param
+        objectName: 'fractal'
         property alias multisample: multisampleSlider.value
         property alias low_spec: lowSpecCheckBox.checked
         property alias c_x: cXField.value
@@ -41,8 +42,10 @@ Item {
         property string mini_image: 'fractal'
         property string formula: 'clog(vec2(z.x, abs(z.y))) + c'
         property string color_method: 'combined'
+    }
 
-        // interaction
+    QtObject {
+        id: ctrl
         property point center_v
         property point center_a
         property point v
@@ -114,9 +117,9 @@ Item {
     Timer {
         id: timer
         running:
-            Math.abs(param.a.x) + Math.abs(param.a.y) + Math.abs(param.zoom_a)
-            + Math.abs(param.map_zoom_a) + Math.abs(param.rot_a)
-            + Math.abs(param.center_a.x) + Math.abs(param.center_a.y) > 0.5
+            Math.abs(ctrl.a.x) + Math.abs(ctrl.a.y) + Math.abs(ctrl.zoom_a)
+            + Math.abs(ctrl.map_zoom_a) + Math.abs(ctrl.rot_a)
+            + Math.abs(ctrl.center_a.x) + Math.abs(ctrl.center_a.y) > 0.5
         interval: 16
         repeat: true
 
@@ -132,32 +135,32 @@ Item {
             }
 
         onTriggered: {
-            param.zoom_v += param.zoom_a * 0.0001
-            param.zoom_v = clamp(param.zoom_v, -0.03, 0.03)
-            param.zoom *= 1 + param.zoom_v
+            ctrl.zoom_v += ctrl.zoom_a * 0.0001
+            ctrl.zoom_v = clamp(ctrl.zoom_v, -0.03, 0.03)
+            param.zoom *= 1 + ctrl.zoom_v
 
-            param.map_zoom_v += param.map_zoom_a * 0.0001
-            param.map_zoom_v = clamp(param.map_zoom_v, -0.03, 0.03)
-            param.map_zoom *= 1 + param.map_zoom_v
+            ctrl.map_zoom_v += ctrl.map_zoom_a * 0.0001
+            ctrl.map_zoom_v = clamp(ctrl.map_zoom_v, -0.03, 0.03)
+            param.map_zoom *= 1 + ctrl.map_zoom_v
 
-            param.rot_v += param.rot_a * 0.0001
-            param.rot_v = clamp(param.rot_v, -0.01, 0.01)
-            param.rotation += param.rot_v
+            ctrl.rot_v += ctrl.rot_a * 0.0001
+            ctrl.rot_v = clamp(ctrl.rot_v, -0.01, 0.01)
+            param.rotation += ctrl.rot_v
 
-            param.v.x += param.a.x * 0.0001
-            param.v.y += param.a.y * 0.0001
-            param.v.x = clamp(param.v.x, -0.005, 0.005)
-            param.v.y = clamp(param.v.y, -0.005, 0.005)
+            ctrl.v.x += ctrl.a.x * 0.0001
+            ctrl.v.y += ctrl.a.y * 0.0001
+            ctrl.v.x = clamp(ctrl.v.x, -0.005, 0.005)
+            ctrl.v.y = clamp(ctrl.v.y, -0.005, 0.005)
 
-            param.c_x += param.v.x * param.map_zoom
-            param.c_y += param.v.y * param.map_zoom
+            param.c_x += ctrl.v.x * param.map_zoom
+            param.c_y += ctrl.v.y * param.map_zoom
 
-            param.center_v.x += param.center_a.x * 0.0001
-            param.center_v.y += param.center_a.y * 0.0001
-            param.center_v.x = clamp(param.center_v.x, -0.02, 0.02)
-            param.center_v.y = clamp(param.center_v.y, -0.02, 0.02)
+            ctrl.center_v.x += ctrl.center_a.x * 0.0001
+            ctrl.center_v.y += ctrl.center_a.y * 0.0001
+            ctrl.center_v.x = clamp(ctrl.center_v.x, -0.02, 0.02)
+            ctrl.center_v.y = clamp(ctrl.center_v.y, -0.02, 0.02)
 
-            translate(param.center_v.x * param.zoom, param.center_v.y * param.zoom)
+            translate(ctrl.center_v.x * param.zoom, ctrl.center_v.y * param.zoom)
         }
 
         function clamp(value, min, max) {
@@ -289,20 +292,20 @@ Item {
         }
 
         if (!event.isAutoRepeat) switch (event.key) {
-            case Qt.Key_Up:     param.a.y =  1; break
-            case Qt.Key_Down:   param.a.y = -1; break
-            case Qt.Key_Left:   param.a.x = -1; break
-            case Qt.Key_Right:  param.a.x =  1; break
-            case Qt.Key_Z:      param.zoom_a =  1; break
-            case Qt.Key_X:      param.zoom_a = -1; break
-            case Qt.Key_V:      param.map_zoom_a =  1; break
-            case Qt.Key_B:      param.map_zoom_a = -1; break
-            case Qt.Key_I:      param.center_a.y =  1; break
-            case Qt.Key_K:      param.center_a.y = -1; break
-            case Qt.Key_J:      param.center_a.x = -1; break
-            case Qt.Key_L:      param.center_a.x =  1; break
-            case Qt.Key_R:      param.rot_a = -1; break
-            case Qt.Key_T:      param.rot_a =  1; break
+            case Qt.Key_Up:     ctrl.a.y =  1; break
+            case Qt.Key_Down:   ctrl.a.y = -1; break
+            case Qt.Key_Left:   ctrl.a.x = -1; break
+            case Qt.Key_Right:  ctrl.a.x =  1; break
+            case Qt.Key_Z:      ctrl.zoom_a =  1; break
+            case Qt.Key_X:      ctrl.zoom_a = -1; break
+            case Qt.Key_V:      ctrl.map_zoom_a =  1; break
+            case Qt.Key_B:      ctrl.map_zoom_a = -1; break
+            case Qt.Key_I:      ctrl.center_a.y =  1; break
+            case Qt.Key_K:      ctrl.center_a.y = -1; break
+            case Qt.Key_J:      ctrl.center_a.x = -1; break
+            case Qt.Key_L:      ctrl.center_a.x =  1; break
+            case Qt.Key_R:      ctrl.rot_a = -1; break
+            case Qt.Key_T:      ctrl.rot_a =  1; break
             case Qt.Key_O:      param.rotation += Math.PI/2; break
 
             case Qt.Key_Period:
@@ -330,13 +333,13 @@ Item {
             case Qt.Key_C:
                 param.center_x = 0
                 param.center_y = 0
-                param.center_v.x = 0
-                param.center_v.y = 0
+                ctrl.center_v.x = 0
+                ctrl.center_v.y = 0
                 break
 
             case Qt.Key_Y:
-                param.rot_a = 0
-                param.rot_v = 0
+                ctrl.rot_a = 0
+                ctrl.rot_v = 0
                 param.rotation = 0
                 break
 
@@ -351,19 +354,19 @@ Item {
                 break
 
             case Qt.Key_Up:
-            case Qt.Key_Down:   param.a.y = 0; param.v.y = 0; break
+            case Qt.Key_Down:   ctrl.a.y = 0; ctrl.v.y = 0; break
             case Qt.Key_Left:
-            case Qt.Key_Right:  param.a.x = 0; param.v.x = 0; break
+            case Qt.Key_Right:  ctrl.a.x = 0; ctrl.v.x = 0; break
             case Qt.Key_Z:
-            case Qt.Key_X:      param.zoom_a = 0; param.zoom_v = 0; break
+            case Qt.Key_X:      ctrl.zoom_a = 0; ctrl.zoom_v = 0; break
             case Qt.Key_V:
-            case Qt.Key_B:      param.map_zoom_a = 0; param.map_zoom_v = 0; break
+            case Qt.Key_B:      ctrl.map_zoom_a = 0; ctrl.map_zoom_v = 0; break
             case Qt.Key_I:
-            case Qt.Key_K:      param.center_a.y = 0; param.center_v.y = 0; break
+            case Qt.Key_K:      ctrl.center_a.y = 0; ctrl.center_v.y = 0; break
             case Qt.Key_J:
-            case Qt.Key_L:      param.center_a.x = 0; param.center_v.x = 0; break
+            case Qt.Key_L:      ctrl.center_a.x = 0; ctrl.center_v.x = 0; break
             case Qt.Key_R:
-            case Qt.Key_T:      param.rot_a = 0; param.rot_v = 0; break
+            case Qt.Key_T:      ctrl.rot_a = 0; ctrl.rot_v = 0; break
         }
     }
 
@@ -466,23 +469,17 @@ Item {
                 }
 
                 Label { text: 'Formula:'; Layout.columnSpan: 2 }
-                RowLayout {
+                TextField {
                     Layout.columnSpan: 3
-                    TextField {
-                        Layout.fillWidth: true
-                        id: formulaInput
-                        text: param.formula
-                        selectByMouse: true
+                    Layout.fillWidth: true
+                    id: formulaInput
+                    text: param.formula
+                    selectByMouse: true
 
-                        onEditingFinished: param.formula = text
-                        Connections {
-                            target: param
-                            function onFormulaChanged() { formulaInput.text = param.formula }
-                        }
-                    }
-                    ToolButton {
-                        text: '↩️'
-                        onClicked: param.formula = 'clog(vec2(z.x, abs(z.y))) + c'
+                    onEditingFinished: param.formula = text
+                    Connections {
+                        target: param
+                        function onFormulaChanged() { formulaInput.text = param.formula }
                     }
                 }
 
@@ -593,6 +590,20 @@ Item {
                     value: 0.0
                     from: 0
                     to: 2*Math.PI
+                }
+
+                Label { text: 'Params:' }
+                TextField {
+                    Layout.columnSpan: 5
+                    Layout.fillWidth: true
+                    onFocusChanged: focus && selectAll()
+                    selectByMouse: true
+                    property string paramstr: JSON.stringify(param)
+                    onParamstrChanged: text = paramstr
+                    onAccepted: {
+                        var obj = JSON.parse(text)
+                        Object.assign(param, obj)
+                    }
                 }
             }
         }
