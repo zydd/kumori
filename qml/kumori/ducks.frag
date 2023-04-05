@@ -123,24 +123,18 @@ vec3 color_norm_itr_count(vec2 z, int i, float mean) {
 }
 
 vec3 color_cyclic_log_log_yb(vec2 z, int i, float m) {
-    float ci = col_variation * (float(i) - log2(log2(m * col))) - col_shift;
-    return vec3(0.5 + 0.5 * cos(ci),
-                0.5 + 0.5 * cos(ci + 0.4),
-                0.5 + 0.5 * cos(ci + 0.87931));
+    float ci = col * log2(1.0 + log2(1.0 + m)) - col_shift;
+    return 0.5 + 0.5 * cos(ci + vec3(0.87931, 0.4, 0.0));
 }
 
 vec3 color_cyclic_log_log_yb2(vec2 z, int i, float m) {
-    float ci = float(i) - log2(log2(m * col)) - col_shift;
-    return vec3(0.5 + 0.5 * cos(6.0 * ci),
-                0.5 + 0.5 * cos(6.0 * ci + 0.4),
-                0.5 + 0.5 * cos(6.0 * ci + 0.87931));
+    float ci = col_variation * (float(i) - log2(log2(m * col))) - col_shift;
+    return 0.5 + 0.5 * cos(ci + vec3(0.0, 0.4, 0.87931));
 }
 
 vec3 color_cyclic_log_log_pg(vec2 z, int i, float m) {
-    float ci = float(i) - log2(log2(m * col)) - col_shift;
-    return vec3(0.5 + 0.5 * cos(6.0 * ci + 0.4),
-                0.5 + 0.5 * cos(6.0 * ci + 0.87931),
-                0.5 + 0.5 * cos(6.0 * ci));
+    float ci = col_variation * (float(i) - log2(log2(m * col))) - col_shift;
+    return 0.5 + 0.5 * cos(ci + vec3(0.4, 0.87931, 0.0));
 }
 
 vec3 color_combined(vec2 z, int i, float mean) {

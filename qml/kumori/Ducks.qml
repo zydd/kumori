@@ -282,8 +282,8 @@ Item {
         case Qt.Key_2:      param.iter += 1; return
         case Qt.Key_3:      param.pre = Math.max(1, param.pre - 1); return
         case Qt.Key_4:      param.pre += 1; return
-        case Qt.Key_Q:      param.col -= 1e-3; return
-        case Qt.Key_W:      param.col += 1e-3; return
+        case Qt.Key_Q:      param.col -= 2 * Math.PI; return
+        case Qt.Key_W:      param.col += 2 * Math.PI; return
         case Qt.Key_A:
             param.col_shift = (param.col_shift - 0.05 < 0) ?
                         param.col_shift - 0.05 + 2*Math.PI :
@@ -382,8 +382,8 @@ Item {
         param.zoom = 0.12224574942781402
         param.iter = 181
         param.pre = 0
-        param.col = 1.0
-        param.col_shift = 2.7094
+        param.col = 400.0
+        param.col_shift = 3.6776
         param.rotation = 0
         param.map_zoom = 0.12
         param.multisample = 4
@@ -410,6 +410,33 @@ Item {
         param.mini_image = 'fractal'
         param.formula = 'cmul(z, z) + c'
         param.color_method = 'iteration'
+    }
+
+    function preset_nautilus() {
+        var config = {
+            "objectName": "fractal",
+            "iter": 64,
+            "esc": 10,
+            "pre": 0,
+            "map_size": 0,
+            "map_zoom": 0.06820460072736786,
+            "rotation": 1.028299999999999,
+            "main_image": "julia",
+            "mini_image": "fractal",
+            "formula": "cmul(z, abs(z)) + c",
+            "color_method": "combined",
+            "multisample": 4,
+            "low_spec": false,
+            "c_x": 0.38854011109653114,
+            "c_y": 0.11681436824954756,
+            "center_x": -0.19674004488140456,
+            "center_y": 0.45870767596535933,
+            "zoom": 0.9935743920840994,
+            "col": 22.430370614359212,
+            "col_shift": 3.4500791190303746,
+            "col_variation": 5
+        }
+        Object.assign(param, config)
     }
 
     Component.onCompleted: {
@@ -463,6 +490,7 @@ Item {
                     model: [
                         'ducks',
                         'mandelbrot',
+                        'nautilus',
                     ]
                     property string text: 'ducks'
                     onCurrentTextChanged: {
@@ -578,7 +606,7 @@ Item {
                 Label { text: 'factor:' }
                 FloatField {
                     id: colField
-                    value: 0.98136
+                    value: 400.0
                 }
 
                 Item { width: 1 }
