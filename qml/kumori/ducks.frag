@@ -23,6 +23,19 @@ const float pi = 3.14159265358979323846;
  * Math functions
  */
 
+mat2 rot(float a) {
+    float s = sin(a);
+    float c = cos(a);
+    return mat2(c, s, -s, c);
+}
+
+float carg(vec2 z)  { return atan(z.y, z.x); }
+vec2 cconj(vec2 z)  { return vec2(z.x, -z.y); }
+
+vec2 cmul(vec2 a, vec2 b) {
+    return vec2(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);
+}
+
 vec2 clog(vec2 z) {
     z = vec2(log(length(z)), atan(z.y, z.x));
     if (z.y > 0.0)
@@ -30,51 +43,59 @@ vec2 clog(vec2 z) {
     return z;
 }
 
-// non-standard branch cut, bad PI value too...
-vec2 clog2(vec2 a) {
-  float b =  atan(a.y,a.x);
-  if (b>0.0) b-=2.0*pi;
-  return vec2(log(length(a)),b);
+vec2 cdiv(vec2 a, vec2 b) {
+    float d = 1.0 / dot(b, b);
+    return vec2(a.x*b.x + a.y*b.y, a.y*b.x - a.x*b.y) * d;
 }
 
-
-mat2 rot(float a) {
-    float s = sin(a);
-    float c = cos(a);
-    return mat2(c, s, -s, c);
+vec2 crec(vec2 z) {
+  float d = 1.0 / dot(z, z);
+  return vec2(z.x, -z.y) * d;
 }
 
-vec2 crec(vec2 c) {
-  float d = dot(c, c);
-  return vec2(c.x / d, -c.y / d);
+float cosh(float z) {
+    z = exp(z);
+    return (z + 1.0 / z) * 0.5;
 }
 
-float cosh(float val)
-{
-    float tmp = exp(val);
-    float cosH = (tmp + 1.0 / tmp) / 2.0;
-    return cosH;
+float tanh(float z) {
+    z = exp(z);
+    float rec_z = 1.0 / z;
+    return (z - rec_z) / (z + rec_z);
 }
 
-float tanh(float val)
-{
-    float tmp = exp(val);
-    float tanH = (tmp - 1.0 / tmp) / (tmp + 1.0 / tmp);
-    return tanH;
+float sinh(float z) {
+    z = exp(z);
+    return (z - 1.0 / z) * 0.5;
 }
 
-float sinh(float val)
-{
-    float tmp = exp(val);
-    float sinH = (tmp - 1.0 / tmp) / 2.0;
-    return sinH;
+vec2 csinh(vec2 z) {
+  return vec2(sinh(z.x) * cos(z.y), cosh(z.x) * sin(z.y));
 }
 
-vec2 cmul(vec2 a, vec2 b) {return vec2(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);}
-vec2 cconj(vec2 a) {return vec2(a.x, -a.y);}
-float carg(vec2 a) {return atan(a.y, a.x);}
-vec2 csin(vec2 a) {return vec2(sin(a.x) * cosh(a.y), cos(a.x) * sinh(a.y));}
-vec2 ccos(vec2 a) {return vec2(cos(a.x) * cosh(a.y), -sin(a.x) * sinh(a.y));}
+vec2 ccosh(vec2 z) {
+  return vec2(cosh(z.x) * cos(z.y), sinh(z.x) * sin(z.y));
+}
+
+vec2 ctanh(vec2 z) {
+  float chr = cosh(z.x);
+  float si = sin(z.y);
+  float d = 1.0 / (chr * chr + si * si);
+  return vec2(sinh(z.x) * chr, si * chr) * d;
+}
+
+vec2 ccos(vec2 z) {
+    return vec2(cos(z.x) * cosh(z.y), -sin(z.x) * sinh(z.y));
+}
+
+vec2 csin(vec2 z) {
+    return vec2(sin(z.x) * cosh(z.y), cos(z.x) * sinh(z.y));
+}
+
+vec2 ctan(vec2 z) {
+    return cdiv(csin(z), ccos(z));
+}
+
 
 /***********************************************************************
  * Coloring
