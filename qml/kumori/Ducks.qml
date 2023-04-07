@@ -242,7 +242,7 @@ Item {
 
         case Qt.Key_G:
             param.multisample = 4
-            param.map_size = 0
+            // param.map_size = 0
 
             let size = Qt.size(fractal.width * 2, fractal.height * 2)
             let timestamp = new Date().getTime()
