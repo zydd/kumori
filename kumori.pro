@@ -16,12 +16,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-        dirwatcher.cpp \
-        kumori.cpp \
-        main.cpp \
-        ohm.cpp \
-        shelliconprovider.cpp \
-        wallpaper.cpp
+        src/dirwatcher.cpp \
+        src/kumori.cpp \
+        src/main.cpp \
+        src/ohm.cpp \
+        src/shelliconprovider.cpp \
+        src/wallpaper.cpp
 
 RESOURCES +=
 
@@ -37,18 +37,18 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-    dirwatcher.h \
-    kumori.h \
-    ohm.h \
-    shelliconprovider.h \
-    wallpaper.h
+    src/dirwatcher.h \
+    src/kumori.h \
+    src/ohm.h \
+    src/shelliconprovider.h \
+    src/wallpaper.h
 
 qml.path = /tmp/$${TARGET}/bin/kumori
 qml.files += \
-    qml/*.frag \
-    qml/*.qml \
-    qml/kumori/*.frag \
-    qml/kumori/*.qml
+    src/qml/*.frag \
+    src/qml/*.qml \
+    src/qml/kumori/*.frag \
+    src/qml/kumori/*.qml
 
 INSTALLS += qml
 
