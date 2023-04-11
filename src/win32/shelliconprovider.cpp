@@ -3,21 +3,18 @@
 #include <qdir.h>
 #include <qfileinfo.h>
 
-#ifdef Q_OS_WIN
 #include <comdef.h>
 #include <CommCtrl.h>
 #include <commoncontrols.h>
 #include <ShObjIdl.h>
 
 #include <qwinfunctions.h>
-#endif
 
 ShellIconProvider::ShellIconProvider():
     QQuickImageProvider(QQuickImageProvider::Pixmap)
 { }
 
 static QPixmap shellIcon(const QString &fileName, const QSize &size) {
-#ifdef Q_OS_WIN
     const wchar_t *fileNameW = reinterpret_cast<const wchar_t *>(fileName.utf16());
     HRESULT hr;
 
@@ -63,20 +60,15 @@ static QPixmap shellIcon(const QString &fileName, const QSize &size) {
             return pixmap;
         }
     }
-#endif
 
     return {};
 }
 
 QPixmap ShellIconProvider::requestPixmap(const QString &id, QSize *size, const QSize &requestedSize) {
-#ifdef Q_OS_WIN
     auto icon = shellIcon(QDir::toNativeSeparators(id), requestedSize);
     if (requestedSize.isValid())
         icon = icon.scaled(requestedSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
     *size = icon.size();
     return icon;
-#else
-        return {};
-#endif
 }

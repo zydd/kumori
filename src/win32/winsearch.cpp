@@ -1,12 +1,13 @@
 #include "winsearch.h"
 
-#include <atldbcli.h>
+//#include <atldbcli.h>
 #include <SearchAPI.h>
 
 #include <qdebug.h>
 #include <qwinfunctions.h>
 
 WinSearch::WinSearch() {
+    /*
     ISearchManager* pSearchManager;
     HRESULT hr;
     hr = CoCreateInstance(CLSID_CSearchManager, nullptr, CLSCTX_LOCAL_SERVER, IID_PPV_ARGS(&pSearchManager));
@@ -108,4 +109,5 @@ WinSearch::WinSearch() {
         }
     }
     cCommand.Close();
+    */
 }

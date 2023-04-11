@@ -7,6 +7,7 @@
 #include <qfilesystemwatcher.h>
 #include <qqmlengine.h>
 #include <qquickwindow.h>
+#include <qscreen.h>
 #include <qstandardpaths.h>
 #include <qwinfunctions.h>
 
@@ -75,7 +76,8 @@ void Kumori::drawOverDesktop(QQuickWindow *window) {
         return;
     }
 
-    SetParent(HWND(window->winId()), desktop);
+    auto desktopWindow = QWindow::fromWinId(reinterpret_cast<WId>(desktop));
+    window->setParent(desktopWindow);
 #endif
 }
 
@@ -102,7 +104,8 @@ void Kumori::drawUnderDesktop(QQuickWindow *window) {
         return;
     }
 
-    SetParent(HWND(window->winId()), workerw);
+    auto desktopWindow = QWindow::fromWinId(reinterpret_cast<WId>(workerw));
+    window->setParent(desktopWindow);
 #endif
 }
 
@@ -205,4 +208,28 @@ QVariant Kumori::updateValue(const QString &key, const QVariant &input) {
 QVariant Kumori::Group::updateValue(const QString &key, const QVariant &input) {
     m_config.setValue(QStringLiteral("config/%1.%2").arg(m_prefix).arg(key), input);
     return input;
+}
+
+void Kumori::hideTaskbar() {
+    auto taskbar = FindWindow(L"Shell_TrayWnd", NULL);
+    ShowWindow(taskbar, SW_HIDE);
+
+//    APPBARDATA abd = {};
+//    abd.cbSize = sizeof(APPBARDATA);
+//    abd.hWnd = taskbar;
+//    abd.lParam = ABS_AUTOHIDE;
+
+//    auto res = SHAppBarMessage(ABM_SETSTATE, &abd);
+//    if (!res) {
+//        qWarning() << "could not hide taskbar";
+//    }
+
+    SetWindowPos(taskbar, HWND_BOTTOM, 0, 0, 0, 0,
+                 SWP_HIDEWINDOW | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+}
+
+void Kumori::showTaskbar() {
+    auto taskbar = FindWindow(L"Shell_TrayWnd", NULL);
+    ShowWindow(taskbar, SW_SHOW);
+    GetParent(taskbar);
 }

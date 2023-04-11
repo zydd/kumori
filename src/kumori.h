@@ -48,6 +48,9 @@ public:
     Q_INVOKABLE QByteArray readFile(QUrl url);
     Q_INVOKABLE bool appendLog(QUrl url, QString text);
 
+    Q_INVOKABLE void hideTaskbar();
+    Q_INVOKABLE void showTaskbar();
+
 public slots:
     void clearComponentCache();
     void playPause();

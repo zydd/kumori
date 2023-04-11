@@ -2,26 +2,44 @@ QT += qml quick winextras
 #CONFIG += lrelease embed_translations
 CONFIG += c++17
 LIBS += -luser32 -ldwmapi -lwbemuuid -lgdi32
-DEFINES += NTDDI_WIN7=0x06010000 _WIN32_WINNT_WIN7=0x0601 WINVER=0x0601
 
-
-# The following define makes your compiler emit warnings if you use
-# any Qt feature that has been marked deprecated (the exact warnings
-# depend on your compiler). Refer to the documentation for the
-# deprecated API to know how to port your code away from it.
-DEFINES += QT_DEPRECATED_WARNINGS
-# You can also make your code fail to compile if it uses deprecated APIs.
-# In order to do so, uncomment the following line.
-# You can also select to disable deprecated APIs only up to a certain version of Qt.
+DEFINES += QT_DEPRECATED_WARNINGS QT_FORCE_ASSERTS QT_MESSAGELOGCONTEXT
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+msvc* {
+#    QMAKE_CXXFLAGS += /WX  # treat warnings as errors
+#    DEFINES += NTDDI_WIN7=0x06010000 _WIN32_WINNT_WIN7=0x0601 WINVER=0x0601
+    DEFINES += _USING_V110_SDK71_
+    RC_INCLUDEPATH += $$(INCLUDEPATH)
+
+    QMAKE_CXXFLAGS_RELEASE += /Zi /Oy-
+    QMAKE_LFLAGS_RELEASE += /MAP /debug /opt:ref
+}
+
 SOURCES += \
-        src/dirwatcher.cpp \
-        src/kumori.cpp \
-        src/main.cpp \
-        src/ohm.cpp \
-        src/shelliconprovider.cpp \
-        src/wallpaper.cpp
+    src/dirwatcher.cpp \
+    src/kumori.cpp \
+    src/main.cpp \
+    src/wallpaper.cpp \
+    src/win32/ohm.cpp \
+    src/win32/shelliconprovider.cpp \
+    src/win32/taskbar/nativewindow.cpp \
+    src/win32/taskbar/trayicon.cpp \
+    src/win32/taskbar/trayservice.cpp \
+    src/win32/taskbar/wmservice.cpp \
+    src/win32/winsearch.cpp
+
+HEADERS += \
+    src/dirwatcher.h \
+    src/kumori.h \
+    src/wallpaper.h \
+    src/win32/ohm.h \
+    src/win32/shelliconprovider.h \
+    src/win32/taskbar/nativewindow.h \
+    src/win32/taskbar/trayicon.h \
+    src/win32/taskbar/trayservice.h \
+    src/win32/taskbar/wmservice.h \
+    src/win32/winsearch.h
 
 RESOURCES +=
 
@@ -36,12 +54,6 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-HEADERS += \
-    src/dirwatcher.h \
-    src/kumori.h \
-    src/ohm.h \
-    src/shelliconprovider.h \
-    src/wallpaper.h
 
 qml.path = /tmp/$${TARGET}/bin/kumori
 qml.files += \
@@ -52,4 +64,5 @@ qml.files += \
 
 INSTALLS += qml
 
-DISTFILES +=
+DISTFILES += \
+    src/qml/kumori/qmldir

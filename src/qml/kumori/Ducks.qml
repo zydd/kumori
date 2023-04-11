@@ -191,11 +191,11 @@ Item {
         onPressed: clickStart = Qt.point(mouse.x, mouse.y)
 
         onPositionChanged: {
-            multisample = 1
+            param.multisample = 1
             var dx = (mouse.x - clickStart.x) / width * 2 * width / height
             var dy = -(mouse.y - clickStart.y) / height * 2
 
-            translate(-dx * zoom, -dy * zoom)
+            translate(-dx * param.zoom, -dy * param.zoom)
 
             clickStart = Qt.point(mouse.x, mouse.y)
         }
@@ -211,14 +211,14 @@ Item {
         function pos2coord(pos) {
             var c = Qt.point(pos.x / width * 2 - 1, -pos.y / height * 2 + 1)
 
-            c.x *= width / height * zoom
-            c.y *= zoom
+            c.x *= width / height * param.zoom
+            c.y *= param.zoom
 
             var d = Qt.point(Math.cos(param.rotation) * c.x - Math.sin(param.rotation) * c.y,
                              Math.sin(param.rotation) * c.x + Math.cos(param.rotation) * c.y)
 
-            d.x += center.x
-            d.y += center.y
+            d.x += param.center_x
+            d.y += param.center_y
 
             return d
         }
@@ -226,10 +226,10 @@ Item {
         function zoomAt(factor, pos) {
             var coord = pos2coord(pos)
 
-            param.center_.x = param.center_x * factor + coord.x * (1-factor)
+            param.center_x = param.center_x * factor + coord.x * (1-factor)
             param.center_y = param.center_y * factor + coord.y * (1-factor)
 
-            zoom *= factor
+            param.zoom *= factor
         }
     }
 
@@ -635,6 +635,18 @@ Item {
                     onAccepted: {
                         var obj = JSON.parse(text)
                         Object.assign(param, obj)
+                    }
+                }
+
+                Label { text: 'Eval:' }
+                TextField {
+                    Layout.columnSpan: 5
+                    Layout.fillWidth: true
+                    onFocusChanged: focus && selectAll()
+                    selectByMouse: true
+                    text: 'Kumori.getOpenWindows()'
+                    Keys.onReturnPressed: {
+                        eval(text)
                     }
                 }
             }

@@ -8,11 +8,14 @@
 
 #include "kumori.h"
 #include "dirwatcher.h"
-#include "shelliconprovider.h"
 #include "wallpaper.h"
 
 #ifdef Q_OS_WIN
-#include "ohm.h"
+#include "win32/ohm.h"
+#include "win32/shelliconprovider.h"
+#include "win32/taskbar/trayicon.h"
+#include "win32/taskbar/trayservice.h"
+#include "win32/taskbar/wmservice.h"
 #endif
 
 QString userImportDir() {
@@ -27,11 +30,18 @@ QString userImportDir() {
 }
 
 int main(int argc, char *argv[]) {
+    qSetMessagePattern("[%{time process} %{threadid} %{type} %{function}:%{line}] %{if-category}%{file}:%{line}: %{endif}%{message}");
+    qDebug();
+
     qmlRegisterType<DirWatcher>("kumori", 0, 1, "DirWatcher");
     qmlRegisterType<Wallpaper>("kumori", 0, 1, "Wallpaper");
 
     qmlRegisterSingletonType<Kumori>("kumori", 0, 1, "Kumori", &Kumori::instance);
 #ifdef Q_OS_WIN
+    qmlRegisterType<TrayIconPainter>("kumori", 0, 1, "TrayIcon");
+    qmlRegisterType<WmService>("kumori", 0, 1, "WmService");
+
+    qmlRegisterSingletonType<TrayService>("kumori", 0, 1, "TrayService", &TrayService::instance);
     qmlRegisterSingletonType<Ohm>("kumori", 0, 1, "Ohm", &Ohm::instance);
 #endif
 
