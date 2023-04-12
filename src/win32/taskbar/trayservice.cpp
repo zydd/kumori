@@ -16,6 +16,8 @@
 using TrayServicePrivate = TrayService::TrayServicePrivate;
 
 struct TrayService::TrayServicePrivate {
+    bool initialized = false;
+
     HINSTANCE hInstance;
     HWND hwndTray;
     HWND hwndNotify;
@@ -66,15 +68,19 @@ TrayService::TrayService(QObject *parent)
     : QObject{parent}
 {
     qDebug();
+
+    d = new TrayServicePrivate();
+    d->hInstance = GetModuleHandle(nullptr);
 }
 
 
 void TrayService::init() {
     qDebug();
 
-    d = new TrayServicePrivate();
-
-    d->hInstance = GetModuleHandle(nullptr);
+    if (d->initialized) {
+        qDebug() << "already initialized";
+        return;
+    }
 
     // TODO: check if there are multiple instances of Shell_TrayWnd and fail
     d->hwndSystemTray = FindWindow(L"Shell_TrayWnd", NULL);
@@ -89,6 +95,7 @@ void TrayService::init() {
     else
         qWarning() << "could not create TaskbarCreated message";
 
+    d->initialized = true;
     qDebug() << "done";
 }
 
@@ -100,10 +107,8 @@ TrayService::~TrayService() {
 QObject *TrayService::instance(QQmlEngine *, QJSEngine *) {
     qDebug();
 
-    if (!::trayService) {
+    if (!::trayService)
         ::trayService = new TrayService();
-        ::trayService->init();
-    }
 
     return ::trayService;
 }
@@ -291,6 +296,8 @@ HWND TrayServicePrivate::registerNotifyWindow() {
 
 void TrayService::setTaskBar(QWindow *window) {
     qDebug() << window << window->geometry();
+
+    init();
 
 //    window->setParent(QWindow::fromWinId(reinterpret_cast<WId>(d->HwndTray)));
     window->setParent(nullptr);

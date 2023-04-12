@@ -17,11 +17,11 @@ public:
 
     QObjectList trayItems();
     Q_INVOKABLE void setTaskBar(QWindow *window);
+    Q_INVOKABLE void init();
 
 private:
     explicit TrayService(QObject *parent = nullptr);
     ~TrayService();
-    void init();
 
     TrayServicePrivate *d;
 
