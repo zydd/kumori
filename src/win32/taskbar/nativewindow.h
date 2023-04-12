@@ -15,8 +15,17 @@ public:
     bool canAddToTaskbar();
     QString title();
 
+    Q_INVOKABLE void toFront();
+    Q_INVOKABLE void minimize();
+    Q_INVOKABLE void restore();
+    Q_INVOKABLE void maximize();
+    bool minimized();
+    int showStyle();
+
 private:
     HWND hwnd;
+
+    void makeForeground();
 
 signals:
     void titleChanged();

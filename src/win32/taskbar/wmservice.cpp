@@ -9,11 +9,12 @@
 WmService::WmService(QObject *parent)
     : QObject{parent}
 {
-    _taskList = getOpenWindows();
+    // TODO: use events
+    startTimer(30000);
 }
 
-QList<QObject*> WmService::getOpenWindows() {
-    QList<QObject*> ret;
+QList<QObject*> WmService::taskList() {
+    QList<QObject *> ret;
 
     EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
         auto *ret = reinterpret_cast<QList<QObject*> *>(lParam);
@@ -27,4 +28,9 @@ QList<QObject*> WmService::getOpenWindows() {
 
 //    HWND hWndForeground = GetForegroundWindow();
     return ret;
+}
+
+void WmService::timerEvent(QTimerEvent *event) {
+    qDebug();
+    emit taskListChanged();
 }

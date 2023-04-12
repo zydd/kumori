@@ -10,18 +10,15 @@ class WmService : public QObject {
     Q_PROPERTY(QList<QObject *> taskList READ taskList NOTIFY taskListChanged)
 
 public:
-
     explicit WmService(QObject *parent = nullptr);
 
-    Q_INVOKABLE QList<QObject*> getOpenWindows();
-
-    inline const QList<QObject *> &taskList() { return _taskList; }
+    Q_INVOKABLE QList<QObject*> taskList();
 
 signals:
-
     void taskListChanged();
-private:
-    QList<QObject *> _taskList;
+
+protected:
+    virtual void timerEvent(QTimerEvent *event) override;
 };
 
 #endif // WMSERVICE_H

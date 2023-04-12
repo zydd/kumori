@@ -1,5 +1,6 @@
 #include "nativewindow.h"
 
+#include <qcoreevent.h>
 #include <qdebug.h>
 #include <qoperatingsystemversion.h>
 
@@ -11,8 +12,9 @@
 NativeWindow::NativeWindow(HWND hwnd, QObject *parent)
     : QObject{parent}, hwnd{hwnd}
 {
-
+    startTimer(30000);
 }
+
 
 bool NativeWindow::canAddToTaskbar() {
     int extendedWindowStyles = GetWindowLong(hwnd, GWL_EXSTYLE);
@@ -84,4 +86,56 @@ QString NativeWindow::title() {
     wchar_t title[1024];
     GetWindowTextW(hwnd, title, sizeof(title) / sizeof(*title));
     return QString::fromWCharArray(title);
+}
+
+void NativeWindow::toFront() {
+    if (minimized()) {
+        restore();
+    } else {
+        ShowWindow(hwnd, SW_SHOW);
+        makeForeground();
+
+//        // some stubborn windows (Outlook) start flashing while already active, this lets us stop
+//        if (State == WS_FLASHING)
+//            State = WS_ACTIVE;
+    }
+}
+
+void NativeWindow::minimize() {
+    if (GetWindowLong(hwnd, GWL_STYLE) & WS_MINIMIZEBOX)
+    {
+        DWORD retval = NULL;
+        SendMessageTimeout(hwnd, WM_SYSCOMMAND, SC_MINIMIZE, 0, 2, 200, &retval);
+    }
+}
+
+void NativeWindow::restore() {
+    DWORD retval = NULL;
+    SendMessageTimeout(hwnd, WM_SYSCOMMAND, SC_RESTORE, 0, 2, 200, &retval);
+
+    makeForeground();
+}
+
+void NativeWindow::maximize() {
+    bool maximizeResult = ShowWindow(hwnd, WS_MAXIMIZE);
+    if (!maximizeResult) {
+        // we don't have a fallback for elevated windows here since our only hope, SC_MAXIMIZE, doesn't seem to work for them. fall back to restore.
+        DWORD retval = NULL;
+        SendMessageTimeout(hwnd, WM_SYSCOMMAND, SC_RESTORE, 0, 2, 200, &retval);
+    }
+    makeForeground();
+}
+
+void NativeWindow::makeForeground() {
+    SetForegroundWindow(GetLastActivePopup(hwnd));
+}
+
+bool NativeWindow::minimized() {
+    return IsIconic(hwnd);
+}
+
+int NativeWindow::showStyle() {
+    WINDOWPLACEMENT placement;
+    GetWindowPlacement(hwnd, &placement);
+    return placement.showCmd;
 }
