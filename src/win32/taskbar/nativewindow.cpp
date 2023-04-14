@@ -11,9 +11,7 @@
 
 NativeWindow::NativeWindow(HWND hwnd, QObject *parent)
     : QObject{parent}, hwnd{hwnd}
-{
-    startTimer(30000);
-}
+{ }
 
 
 bool NativeWindow::canAddToTaskbar() {

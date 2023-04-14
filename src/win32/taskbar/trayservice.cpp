@@ -2,16 +2,17 @@
 
 #include <unordered_map>
 
-#include <Windows.h>
-#include <CommCtrl.h>
-
 #include <qdebug.h>
 #include <qpixmap.h>
 #include <qscreen.h>
 #include <qwindow.h>
 #include <qwinfunctions.h>
 
+#include <Windows.h>
+#include <CommCtrl.h>
+
 #include "trayicon.h"
+
 
 using TrayServicePrivate = TrayService::TrayServicePrivate;
 
@@ -68,9 +69,7 @@ TrayService::TrayService(QObject *parent)
     : QObject{parent}
 {
     qDebug();
-
     d = new TrayServicePrivate();
-    d->hInstance = GetModuleHandle(nullptr);
 }
 
 
@@ -81,6 +80,8 @@ void TrayService::init() {
         qDebug() << "already initialized";
         return;
     }
+
+    d->hInstance = GetModuleHandle(nullptr);
 
     // TODO: check if there are multiple instances of Shell_TrayWnd and fail
     d->hwndSystemTray = FindWindow(L"Shell_TrayWnd", NULL);
@@ -94,6 +95,8 @@ void TrayService::init() {
         SendNotifyMessage(HWND_BROADCAST, msg, NULL, NULL);
     else
         qWarning() << "could not create TaskbarCreated message";
+
+    startTimer(150);
 
     d->initialized = true;
     qDebug() << "done";
@@ -240,7 +243,7 @@ HWND TrayServicePrivate::registerTrayWindow() {
         NULL, // parent window handle
         NULL, // menu handle
         hInstance, // application instance handle
-        (void*)1234); // creation parameters
+        NULL); // creation parameters
 
     if (hwndTray == nullptr) {
         auto err = GetLastError();
@@ -332,9 +335,9 @@ void TrayService::setTaskBar(QWindow *window) {
 //    SetWindowPos(d->hwndTray, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOSIZE);
 }
 
-//void TrayService::timerEvent(QTimerEvent *event) {
-//    QObject::timerEvent(event);
-//}
+void TrayService::timerEvent(QTimerEvent */*event*/) {
+    SetWindowPos(d->hwndTray, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOSIZE);
+}
 
 
 

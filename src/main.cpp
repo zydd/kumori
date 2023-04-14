@@ -39,11 +39,14 @@ int main(int argc, char *argv[]) {
     qmlRegisterSingletonType<Kumori>("kumori", 0, 1, "Kumori", &Kumori::instance);
 #ifdef Q_OS_WIN
     qmlRegisterType<TrayIconPainter>("kumori", 0, 1, "TrayIcon");
-    qmlRegisterType<WmService>("kumori", 0, 1, "WmService");
 
     qmlRegisterSingletonType<TrayService>("kumori", 0, 1, "TrayService", &TrayService::instance);
+    qmlRegisterSingletonType<WmService>("kumori", 0, 1, "WmService", &WmService::instance);
     qmlRegisterSingletonType<Ohm>("kumori", 0, 1, "Ohm", &Ohm::instance);
 #endif
+
+//    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 
     QGuiApplication app(argc, argv);
     app.setOrganizationName("zydd");
