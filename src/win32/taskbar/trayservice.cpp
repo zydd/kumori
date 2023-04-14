@@ -96,7 +96,8 @@ void TrayService::init() {
     else
         qWarning() << "could not create TaskbarCreated message";
 
-    startTimer(150);
+    RECT rect = {0, 0, 1920, 600}; // Define a rectangle representing the new working area
+    SystemParametersInfo(SPI_SETWORKAREA, 0, &rect, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
 
     d->initialized = true;
     qDebug() << "done";
@@ -302,7 +303,6 @@ void TrayService::setTaskBar(QWindow *window) {
 
     init();
 
-//    window->setParent(QWindow::fromWinId(reinterpret_cast<WId>(d->HwndTray)));
     window->setParent(nullptr);
 
     auto hwnd = reinterpret_cast<HWND>(window->winId());
@@ -313,6 +313,15 @@ void TrayService::setTaskBar(QWindow *window) {
         abd.hWnd = hwnd;
         SHAppBarMessage(ABM_NEW, &abd);
     }
+
+    static APPBARDATA abd = []{
+        APPBARDATA abd;
+        abd.cbSize = sizeof(APPBARDATA);
+        abd.lParam = ABS_AUTOHIDE;
+        return abd;
+    }();
+    abd.hWnd = d->hwndSystemTray;
+    SHAppBarMessage(ABM_SETSTATE, &abd);
 
     {
         APPBARDATA abd = {};
@@ -330,13 +339,28 @@ void TrayService::setTaskBar(QWindow *window) {
         SHAppBarMessage(ABM_SETPOS, &abd);
     }
 
-    ShowWindow(d->hwndSystemTray, SW_HIDE);
+    startTimer(500);
+
+//    ShowWindow(d->hwndSystemTray, SW_HIDE);
 //    SetWindowPos(d->hwndSystemTray, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-//    SetWindowPos(d->hwndTray, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOSIZE);
 }
 
 void TrayService::timerEvent(QTimerEvent */*event*/) {
     SetWindowPos(d->hwndTray, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOSIZE);
+
+    if (IsWindowVisible(d->hwndSystemTray)) {
+        static APPBARDATA abd = []{
+            APPBARDATA abd;
+            abd.cbSize = sizeof(APPBARDATA);
+            abd.lParam = ABS_AUTOHIDE;
+            return abd;
+        }();
+        abd.hWnd = d->hwndSystemTray;
+        SHAppBarMessage(ABM_SETSTATE, &abd);
+
+        ShowWindow(d->hwndSystemTray, SW_HIDE);
+        qDebug() << "hide explorer taskbar";
+    }
 }
 
 
