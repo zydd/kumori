@@ -11,6 +11,7 @@ Window {
     flags: Qt.WindowStaysOnBottomHint | Qt.FramelessWindowHint
 
     property var window
+    property var rootitem
     property var error
 
     Timer {
@@ -20,23 +21,26 @@ Window {
         interval: 300
         onTriggered: {
             console.log('loading UI')
+            base.visible = false
 
-            if (window) window.destroy()
+            if (rootitem)
+                rootitem.destroy()
 
-            if (error) {
-                base.visible = false
+            if (window)
+                window.destroy()
+
+            if (error)
                 error.destroy()
-            }
 
             Kumori.clearComponentCache()
 
-            window = Qt.createQmlObject('import QtQuick.Window 2.12; Window { color: "transparent";'
+            window = Qt.createQmlObject('import QtQuick.Window 2.15; Window { color: "transparent";'
                                         + 'flags: Qt.WindowStaysOnBottomHint | Qt.FramelessWindowHint | Qt.SubWindow }',
                                         base)
 
             var component = Qt.createComponent('file:///' + Kumori.userImportDir + '/Root.qml');
             if (component.status === Component.Ready) {
-                component.createObject(window);
+                rootitem = component.createObject(window);
                 window.x = Qt.binding(() => base.x)
                 window.y = Qt.binding(() => base.y)
                 window.width = Qt.binding(() => base.width)
@@ -51,7 +55,7 @@ Window {
     function showError(msg) {
         console.log(msg)
         if (window) window.destroy()
-        error = Qt.createQmlObject('import QtQuick 2.12; Text { color: "white"; text: "' + msg +
+        error = Qt.createQmlObject('import QtQuick 2.15; Text { color: "white"; text: "' + msg +
                                    '"; wrapMode: Text.Wrap; anchors.fill: parent; }', base)
         base.visible = true
     }
