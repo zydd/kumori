@@ -18,6 +18,7 @@ public:
     Q_INVOKABLE void init();
     QObjectList trayItems();
     Q_INVOKABLE void setTaskBar(QWindow *window);
+    Q_INVOKABLE void restoreSystemTaskbar();
 
 private:
     explicit TrayService(QObject *parent = nullptr);
