@@ -105,6 +105,7 @@ void TrayService::init() {
 
 TrayService::~TrayService() {
     qDebug();
+    restoreSystemTaskbar();
     delete this->d;
 }
 
@@ -373,6 +374,8 @@ void TrayService::timerEvent(QTimerEvent */*event*/) {
 
 
 void TrayService::restoreSystemTaskbar() {
+    qDebug();
+
     killTimer(d->timerId);
     d->timerId = 0;
 
