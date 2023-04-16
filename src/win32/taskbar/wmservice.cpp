@@ -37,16 +37,49 @@ decltype(WmServicePrivate::staticData) WmServicePrivate::staticData;
 
 
 WmService::WmService(QObject *parent)
-    : QObject{parent}
+    : QAbstractItemModel{parent}
 {
     qDebug();
     d = new WmServicePrivate();
+
+    _roleNames[Roles::IdRole] = "id";
+    _roleNames[Roles::NativeWindowRole] = "nativeWindow";
 }
 
 
 WmService::~WmService() {
     qDebug();
     delete this->d;
+}
+
+QModelIndex WmService::index(int row, int column, const QModelIndex &parent) const {
+    return createIndex(row, column);
+}
+
+QModelIndex WmService::parent(const QModelIndex &child) const {
+    return {};
+}
+
+int WmService::rowCount(const QModelIndex &parent) const {
+    return _windowList.size();
+}
+
+int WmService::columnCount(const QModelIndex &parent) const {
+    return 1;
+}
+
+QVariant WmService::data(const QModelIndex &index, int role) const {
+    switch (role) {
+    case IdRole:    return 0;
+    case NativeWindowRole: return QVariant::fromValue(_windowList[index.row()]);
+    }
+
+    Q_ASSERT(false);
+    return {};
+}
+
+QHash<int, QByteArray> WmService::roleNames() const {
+    return _roleNames;
 }
 
 
@@ -101,6 +134,8 @@ void WmService::init() {
 
     RemoveProp(d->hwndSystemTray, L"TaskbandHWND");
     SetProp(d->hwndTray, L"TaskbandHWND", hwndTaskm);
+
+    enumerateWindows();
 
     d->initialized = true;
     qDebug() << "done";
@@ -221,6 +256,35 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
     }
 
     return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+
+void WmService::enumerateWindows() {
+    Q_ASSERT(_windowList.size() == 0);
+
+    struct WindowList {
+        QVector<NativeWindow *> windowList;
+        QHash<HWND, int> hwndIndex;
+    };
+
+    WindowList windows;
+    EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
+        auto *data = reinterpret_cast<WindowList *>(lParam);
+        auto wnd = new NativeWindow{hwnd};
+        if (wnd->canAddToTaskbar()) {
+            data->hwndIndex.insert(hwnd, data->windowList.size());
+            data->windowList.push_back(wnd);
+        } else {
+            delete wnd;
+            data->hwndIndex.insert(hwnd, -1);
+        }
+        return true;
+    }, LPARAM(&windows));
+
+    beginInsertRows({}, 0, windows.windowList.size());
+    _windowList = std::move(windows.windowList);
+    _hwndIndex = std::move(windows.hwndIndex);
+    endInsertRows();
 }
 
 

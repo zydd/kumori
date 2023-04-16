@@ -1,7 +1,7 @@
 #ifndef NATIVEWINDOW_H
 #define NATIVEWINDOW_H
 
-#include <QObject>
+#include <qobject.h>
 
 typedef struct HWND__ *HWND;
 
