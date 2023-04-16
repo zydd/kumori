@@ -239,9 +239,28 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
             }
             break;
         }
-        case HSHELL_WINDOWDESTROYED:
+        case HSHELL_WINDOWDESTROYED: {
             qDebug() << "WINDOWDESTROYED" << hwndParam;
+            auto itr = wmService->_hwndIndex.find(hwndParam);
+            if (itr != wmService->_hwndIndex.end()) {
+                if (itr.value() >= 0) {
+                    auto index = itr.value();
+                    wmService->beginRemoveRows({}, index, index);
+                    auto wnd = wmService->_windowList[index];
+
+                    wmService->_windowList.remove(index);
+
+                    if (wmService->_activeWindow == wnd)
+                        wmService->_activeWindow = nullptr;
+
+                    delete wnd;
+                    wmService->endRemoveRows();
+                }
+
+                wmService->_hwndIndex.remove(hwndParam);
+            }
             break;
+        }
         case HSHELL_ACTIVATESHELLWINDOW:
             qDebug() << "ACTIVATESHELLWINDOW" << hwndParam;
             break;
