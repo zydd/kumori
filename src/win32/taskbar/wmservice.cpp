@@ -195,16 +195,18 @@ ushort WmServicePrivate::registerWindowClass(LPCWSTR name) {
 
 
 LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    auto hwndParam = reinterpret_cast<HWND>(lParam);
+
     if (msg == staticData.WM_SHELLHOOKMESSAGE) {
         switch (wParam) {
         case HSHELL_GETMINRECT:
-            qDebug() << "GETMINRECT" << lParam;
+            qDebug() << "GETMINRECT" << hwndParam;
             break;
         case HSHELL_WINDOWACTIVATED:
             break;
         case HSHELL_RUDEAPPACTIVATED: {
-            qDebug() << "RUDEAPPACTIVATED" << reinterpret_cast<HWND>(lParam);
-            auto itr = wmService->_hwndIndex.find(reinterpret_cast<HWND>(lParam));
+            qDebug() << "RUDEAPPACTIVATED" << hwndParam;
+            auto itr = wmService->_hwndIndex.find(hwndParam);
             if (itr != wmService->_hwndIndex.end() && itr.value() >= 0) {
                 auto wnd = wmService->_windowList[itr.value()];
 
@@ -217,26 +219,38 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
             break;
         }
         case HSHELL_WINDOWREPLACING:
-            qDebug() << "WINDOWREPLACING" << lParam;
+            qDebug() << "WINDOWREPLACING" << hwndParam;
             break;
         case HSHELL_WINDOWREPLACED:
-            qDebug() << "WINDOWREPLACED" << lParam;
+            qDebug() << "WINDOWREPLACED" << hwndParam;
             break;
-        case HSHELL_WINDOWCREATED:
-            qDebug() << "WINDOWCREATED" << lParam;
+        case HSHELL_WINDOWCREATED: {
+            qDebug() << "WINDOWCREATED" << hwndParam;
+            auto wnd = new NativeWindow{hwndParam};
+            if (wnd->canAddToTaskbar()) {
+                auto index = wmService->_windowList.size();
+                wmService->beginInsertRows({}, index, index);
+                wmService->_hwndIndex[hwndParam] = index;
+                wmService->_windowList.push_back(wnd);
+                wmService->endInsertRows();
+            } else {
+                delete wnd;
+                wmService->_hwndIndex[hwndParam] = -1;
+            }
             break;
+        }
         case HSHELL_WINDOWDESTROYED:
-            qDebug() << "WINDOWDESTROYED" << lParam;
+            qDebug() << "WINDOWDESTROYED" << hwndParam;
             break;
         case HSHELL_ACTIVATESHELLWINDOW:
-            qDebug() << "ACTIVATESHELLWINDOW" << lParam;
+            qDebug() << "ACTIVATESHELLWINDOW" << hwndParam;
             break;
         case HSHELL_TASKMAN:
-            qDebug() << "TASKMAN" << lParam;
+            qDebug() << "TASKMAN" << hwndParam;
             break;
         case HSHELL_REDRAW: {
-            qDebug() << "REDRAW" << lParam;
-            auto itr = wmService->_hwndIndex.find(reinterpret_cast<HWND>(lParam));
+            qDebug() << "REDRAW" << hwndParam;
+            auto itr = wmService->_hwndIndex.find(hwndParam);
             if (itr != wmService->_hwndIndex.end() && itr.value() >= 0) {
                 auto wnd = wmService->_windowList[itr.value()];
                 emit wnd->titleChanged();
@@ -244,16 +258,16 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
         }
             break;
         case HSHELL_FLASH:
-            qDebug() << "FLASH" << lParam;
+            qDebug() << "FLASH" << hwndParam;
             break;
         case HSHELL_ENDTASK:
-            qDebug() << "ENDTASK" << lParam;
+            qDebug() << "ENDTASK" << hwndParam;
             break;
         case HSHELL_APPCOMMAND:
-            qDebug() << "APPCOMMAND" << lParam;
+            qDebug() << "APPCOMMAND" << hwndParam;
             break;
         case HSHELL_MONITORCHANGED :
-            qDebug() << "MONITORCHANGED " << lParam;
+            qDebug() << "MONITORCHANGED " << hwndParam;
             break;
 
         default:
