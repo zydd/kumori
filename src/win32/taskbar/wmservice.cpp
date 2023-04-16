@@ -195,37 +195,38 @@ ushort WmServicePrivate::registerWindowClass(LPCWSTR name) {
 
 
 LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-#define update_tasklist() \
-    if (lParam && NativeWindow((HWND) lParam).canAddToTaskbar()) \
-        emit wmService->taskListChanged();
-
     if (msg == staticData.WM_SHELLHOOKMESSAGE) {
         switch (wParam) {
         case HSHELL_GETMINRECT:
             qDebug() << "GETMINRECT" << lParam;
             break;
         case HSHELL_WINDOWACTIVATED:
-            qDebug() << "WINDOWACTIVATED" << lParam;
-            update_tasklist();
             break;
-        case HSHELL_RUDEAPPACTIVATED:
-            qDebug() << "RUDEAPPACTIVATED" << lParam;
-            update_tasklist();
+        case HSHELL_RUDEAPPACTIVATED: {
+            qDebug() << "RUDEAPPACTIVATED" << reinterpret_cast<HWND>(lParam);
+            auto itr = wmService->_hwndIndex.find(reinterpret_cast<HWND>(lParam));
+            if (itr != wmService->_hwndIndex.end() && itr.value() >= 0) {
+                auto wnd = wmService->_windowList[itr.value()];
+
+                if (wmService->_activeWindow)
+                    wmService->_activeWindow->setActive(false);
+
+                wmService->_activeWindow = wnd;
+                wnd->setActive(true);
+            }
             break;
+        }
         case HSHELL_WINDOWREPLACING:
             qDebug() << "WINDOWREPLACING" << lParam;
             break;
         case HSHELL_WINDOWREPLACED:
             qDebug() << "WINDOWREPLACED" << lParam;
-            update_tasklist();
             break;
         case HSHELL_WINDOWCREATED:
             qDebug() << "WINDOWCREATED" << lParam;
-            update_tasklist();
             break;
         case HSHELL_WINDOWDESTROYED:
             qDebug() << "WINDOWDESTROYED" << lParam;
-            update_tasklist();
             break;
         case HSHELL_ACTIVATESHELLWINDOW:
             qDebug() << "ACTIVATESHELLWINDOW" << lParam;
@@ -233,8 +234,14 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
         case HSHELL_TASKMAN:
             qDebug() << "TASKMAN" << lParam;
             break;
-        case HSHELL_REDRAW:
+        case HSHELL_REDRAW: {
             qDebug() << "REDRAW" << lParam;
+            auto itr = wmService->_hwndIndex.find(reinterpret_cast<HWND>(lParam));
+            if (itr != wmService->_hwndIndex.end() && itr.value() >= 0) {
+                auto wnd = wmService->_windowList[itr.value()];
+                emit wnd->titleChanged();
+            }
+        }
             break;
         case HSHELL_FLASH:
             qDebug() << "FLASH" << lParam;
@@ -268,10 +275,12 @@ void WmService::enumerateWindows() {
     };
 
     WindowList windows;
+
     EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
         auto *data = reinterpret_cast<WindowList *>(lParam);
         auto wnd = new NativeWindow{hwnd};
         if (wnd->canAddToTaskbar()) {
+            qDebug() << data->windowList.size() << hwnd << wnd->title();
             data->hwndIndex.insert(hwnd, data->windowList.size());
             data->windowList.push_back(wnd);
         } else {
@@ -281,10 +290,19 @@ void WmService::enumerateWindows() {
         return true;
     }, LPARAM(&windows));
 
-    beginInsertRows({}, 0, windows.windowList.size());
+    beginInsertRows({}, 0, windows.windowList.size() - 1);
     _windowList = std::move(windows.windowList);
     _hwndIndex = std::move(windows.hwndIndex);
     endInsertRows();
+
+    auto foreground = GetForegroundWindow();
+    foreach (auto window, _windowList) {
+        if (window->hwnd() == foreground) {
+            window->setActive(true);
+            _activeWindow = window;
+            break;
+        }
+    }
 }
 
 

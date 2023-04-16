@@ -10,18 +10,18 @@
 #include <winuser.h>
 
 NativeWindow::NativeWindow(HWND hwnd, QObject *parent)
-    : QObject{parent}, hwnd{hwnd}
+    : QObject{parent}, _hwnd{hwnd}
 { }
 
 
 bool NativeWindow::canAddToTaskbar() {
-    int extendedWindowStyles = GetWindowLong(hwnd, GWL_EXSTYLE);
-    bool isWindow = IsWindow(hwnd);
-    bool isVisible = IsWindowVisible(hwnd);
+    int extendedWindowStyles = GetWindowLong(_hwnd, GWL_EXSTYLE);
+    bool isWindow = IsWindow(_hwnd);
+    bool isVisible = IsWindowVisible(_hwnd);
     bool isToolWindow = (extendedWindowStyles & WS_EX_TOOLWINDOW) != 0;
     bool isAppWindow = (extendedWindowStyles & WS_EX_APPWINDOW) != 0;
     bool isNoActivate = (extendedWindowStyles & WS_EX_NOACTIVATE) != 0;
-    auto ownerWin = GetWindow(hwnd, GW_OWNER);
+    auto ownerWin = GetWindow(_hwnd, GW_OWNER);
 
     bool canShow = isWindow && isVisible && (ownerWin == nullptr || isAppWindow)
             && (!isNoActivate || isAppWindow) && !isToolWindow;
@@ -34,15 +34,15 @@ bool NativeWindow::canAddToTaskbar() {
         return false;
 
     BOOL cloaked = false;
-    DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(BOOL));
+    DwmGetWindowAttribute(_hwnd, DWMWA_CLOAKED, &cloaked, sizeof(BOOL));
 
     if (cloaked) {
-        qDebug() << "cloaked window:" << hwnd << title();
+        qDebug() << "cloaked window:" << _hwnd << title();
         return false;
     }
 
     DWORD pid = 0;
-    GetWindowThreadProcessId(hwnd, &pid);
+    GetWindowThreadProcessId(_hwnd, &pid);
     QString processName;
     if (pid) {
         // open process
@@ -58,11 +58,11 @@ bool NativeWindow::canAddToTaskbar() {
 
     // UWP shell windows that are not cloaked should be hidden from the taskbar, too.
     WCHAR _windowClass[256];
-    GetClassName(hwnd, _windowClass, sizeof(_windowClass) / sizeof(*_windowClass));
+    GetClassName(_hwnd, _windowClass, sizeof(_windowClass) / sizeof(*_windowClass));
     auto windowClass = QString::fromWCharArray(_windowClass);
     if (windowClass == "ApplicationFrameWindow" || windowClass == "Windows.UI.Core.CoreWindow") {
-        if ((GetWindowLong(hwnd, GWL_EXSTYLE) & WS_EX_WINDOWEDGE) == 0) {
-            qDebug() << "UWP non-window:" << hwnd << title();
+        if ((GetWindowLong(_hwnd, GWL_EXSTYLE) & WS_EX_WINDOWEDGE) == 0) {
+            qDebug() << "UWP non-window:" << _hwnd << title();
             return false;
         }
     } else if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10
@@ -80,17 +80,19 @@ bool NativeWindow::canAddToTaskbar() {
     return true;
 }
 
+
 QString NativeWindow::title() {
     wchar_t title[1024];
-    GetWindowTextW(hwnd, title, sizeof(title) / sizeof(*title));
+    GetWindowTextW(_hwnd, title, sizeof(title) / sizeof(*title));
     return QString::fromWCharArray(title);
 }
+
 
 void NativeWindow::toFront() {
     if (minimized()) {
         restore();
     } else {
-        ShowWindow(hwnd, SW_SHOW);
+        ShowWindow(_hwnd, SW_SHOW);
         makeForeground();
 
 //        // some stubborn windows (Outlook) start flashing while already active, this lets us stop
@@ -99,41 +101,57 @@ void NativeWindow::toFront() {
     }
 }
 
+
 void NativeWindow::minimize() {
-    if (GetWindowLong(hwnd, GWL_STYLE) & WS_MINIMIZEBOX)
+    if (GetWindowLong(_hwnd, GWL_STYLE) & WS_MINIMIZEBOX)
     {
         DWORD retval = NULL;
-        SendMessageTimeout(hwnd, WM_SYSCOMMAND, SC_MINIMIZE, 0, 2, 200, &retval);
+        SendMessageTimeout(_hwnd, WM_SYSCOMMAND, SC_MINIMIZE, 0, 2, 200, &retval);
     }
 }
+
 
 void NativeWindow::restore() {
     DWORD retval = NULL;
-    SendMessageTimeout(hwnd, WM_SYSCOMMAND, SC_RESTORE, 0, 2, 200, &retval);
+    SendMessageTimeout(_hwnd, WM_SYSCOMMAND, SC_RESTORE, 0, 2, 200, &retval);
 
     makeForeground();
 }
 
+
 void NativeWindow::maximize() {
-    bool maximizeResult = ShowWindow(hwnd, WS_MAXIMIZE);
+    bool maximizeResult = ShowWindow(_hwnd, WS_MAXIMIZE);
     if (!maximizeResult) {
         // we don't have a fallback for elevated windows here since our only hope, SC_MAXIMIZE, doesn't seem to work for them. fall back to restore.
         DWORD retval = NULL;
-        SendMessageTimeout(hwnd, WM_SYSCOMMAND, SC_RESTORE, 0, 2, 200, &retval);
+        SendMessageTimeout(_hwnd, WM_SYSCOMMAND, SC_RESTORE, 0, 2, 200, &retval);
     }
     makeForeground();
 }
 
+
 void NativeWindow::makeForeground() {
-    SetForegroundWindow(GetLastActivePopup(hwnd));
+    SetForegroundWindow(GetLastActivePopup(_hwnd));
 }
 
+
 bool NativeWindow::minimized() {
-    return IsIconic(hwnd);
+    return IsIconic(_hwnd);
 }
+
 
 int NativeWindow::showStyle() {
     WINDOWPLACEMENT placement;
-    GetWindowPlacement(hwnd, &placement);
+    GetWindowPlacement(_hwnd, &placement);
     return placement.showCmd;
+}
+
+
+void NativeWindow::setActive(bool newActive) {
+    if (_active == newActive)
+        return;
+
+    _active = newActive;
+    qDebug() << "activeChanged";
+    emit activeChanged();
 }

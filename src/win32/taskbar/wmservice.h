@@ -29,10 +29,11 @@ private:
     explicit WmService(QObject *parent = nullptr);
     ~WmService();
 
-    WmServicePrivate *d;
+    WmServicePrivate *d = nullptr;
     QHash<int, QByteArray> _roleNames;
     QVector<NativeWindow *> _windowList;
     QHash<HWND, int> _hwndIndex;
+    NativeWindow *_activeWindow = nullptr;
 
     void enumerateWindows();
 
