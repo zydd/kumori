@@ -11,14 +11,12 @@ class QJSEngine;
 
 class WmService : public QAbstractItemModel {
     Q_OBJECT
-    Q_PROPERTY(QList<QObject *> taskList READ taskList NOTIFY taskListChanged)
 
 public:
     struct WmServicePrivate;
     static QObject *instance(QQmlEngine *, QJSEngine *);
 
     Q_INVOKABLE void init();
-    Q_INVOKABLE QList<QObject*> taskList();
 
 private:
     enum Roles {
@@ -38,7 +36,7 @@ private:
     void enumerateWindows();
 
 signals:
-    void taskListChanged();
+
 
     // QAbstractItemModel interface
 public:
