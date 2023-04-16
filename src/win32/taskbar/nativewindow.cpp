@@ -103,10 +103,10 @@ void NativeWindow::toFront() {
 
 
 void NativeWindow::minimize() {
-    if (GetWindowLong(_hwnd, GWL_STYLE) & WS_MINIMIZEBOX)
-    {
+    if (GetWindowLong(_hwnd, GWL_STYLE) & WS_MINIMIZEBOX) {
         DWORD retval = NULL;
         SendMessageTimeout(_hwnd, WM_SYSCOMMAND, SC_MINIMIZE, 0, 2, 200, &retval);
+        setActive(false);
     }
 }
 
