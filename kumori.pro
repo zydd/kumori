@@ -18,9 +18,9 @@ msvc* {
 
 SOURCES += \
     src/dirwatcher.cpp \
-    src/kumori.cpp \
     src/main.cpp \
-    src/wallpaper.cpp \
+    src/qmltypes/kumori.cpp \
+    src/qmltypes/wallpaper.cpp \
     src/win32/ohm.cpp \
     src/win32/shelliconprovider.cpp \
     src/win32/taskbar/nativewindow.cpp \
@@ -31,8 +31,8 @@ SOURCES += \
 
 HEADERS += \
     src/dirwatcher.h \
-    src/kumori.h \
-    src/wallpaper.h \
+    src/qmltypes/kumori.h \
+    src/qmltypes/wallpaper.h \
     src/win32/ohm.h \
     src/win32/shelliconprovider.h \
     src/win32/taskbar/nativewindow.h \

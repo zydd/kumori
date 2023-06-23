@@ -6,9 +6,9 @@
 #include <qscreen.h>
 #include <qwindow.h>
 
-#include "kumori.h"
 #include "dirwatcher.h"
-#include "wallpaper.h"
+#include "qmltypes/kumori.h"
+#include "qmltypes/wallpaper.h"
 
 #ifdef Q_OS_WIN
 #include "win32/ohm.h"
