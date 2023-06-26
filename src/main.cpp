@@ -1,6 +1,7 @@
 #include <qdiriterator.h>
 #include <qfilesystemwatcher.h>
 #include <qguiapplication.h>
+#include <qopenglcontext.h>
 #include <qqmlapplicationengine.h>
 #include <qqmlcontext.h>
 #include <qscreen.h>
@@ -8,6 +9,7 @@
 
 #include "dirwatcher.h"
 #include "qmltypes/kumori.h"
+#include "qmltypes/shaderpipeline/shaderpipeline.h"
 #include "qmltypes/wallpaper.h"
 
 #ifdef Q_OS_WIN
@@ -34,6 +36,7 @@ int main(int argc, char *argv[]) {
     qDebug();
 
     qmlRegisterType<DirWatcher>("kumori", 0, 1, "DirWatcher");
+    qmlRegisterType<ShaderPipeline>("kumori", 0, 1, "ShaderPipeline");
     qmlRegisterType<Wallpaper>("kumori", 0, 1, "Wallpaper");
 
     qmlRegisterSingletonType<Kumori>("kumori", 0, 1, "Kumori", &Kumori::instance);
@@ -44,6 +47,14 @@ int main(int argc, char *argv[]) {
     qmlRegisterSingletonType<WmService>("kumori", 0, 1, "WmService", &WmService::instance);
     qmlRegisterSingletonType<Ohm>("kumori", 0, 1, "Ohm", &Ohm::instance);
 #endif
+
+    QSurfaceFormat::setDefaultFormat([]{
+        QSurfaceFormat format;
+        format.setRenderableType(QSurfaceFormat::OpenGLES);
+        format.setProfile(QSurfaceFormat::CoreProfile);
+        format.setVersion(3, 0);
+        return format;
+    }());
 
 //    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);

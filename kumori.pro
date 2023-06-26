@@ -1,4 +1,4 @@
-QT += qml quick winextras
+QT += qml quick winextras opengl
 #CONFIG += lrelease embed_translations
 CONFIG += c++17
 LIBS += -luser32 -ldwmapi -lwbemuuid -lgdi32
@@ -20,6 +20,8 @@ SOURCES += \
     src/dirwatcher.cpp \
     src/main.cpp \
     src/qmltypes/kumori.cpp \
+    src/qmltypes/shaderpipeline/pipelinerenderer.cpp \
+    src/qmltypes/shaderpipeline/shaderpipeline.cpp \
     src/qmltypes/wallpaper.cpp \
     src/win32/ohm.cpp \
     src/win32/shelliconprovider.cpp \
@@ -32,6 +34,8 @@ SOURCES += \
 HEADERS += \
     src/dirwatcher.h \
     src/qmltypes/kumori.h \
+    src/qmltypes/shaderpipeline/pipelinerenderer.h \
+    src/qmltypes/shaderpipeline/shaderpipeline.h \
     src/qmltypes/wallpaper.h \
     src/win32/ohm.h \
     src/win32/shelliconprovider.h \
@@ -59,6 +63,7 @@ qml.path = /tmp/$${TARGET}/bin/kumori
 qml.files += \
     src/qml/*.frag \
     src/qml/*.qml \
+    src/qml/fluidsim/*.frag \
     src/qml/kumori/*.frag \
     src/qml/kumori/*.qml
 
