@@ -16,9 +16,9 @@ static const char *vertexShaderSource =
 struct PipelineItem {
     unsigned repeat;
     QOpenGLShaderProgram *program;
-    QVector<unsigned> inputs;
-    QVector<unsigned> outputs;
-    QVector<PipelineItem *> *subroutine;
+    QVector<int> inputs;
+    QVector<int> outputs;
+    QVector<PipelineItem *> subroutine;
 };
 
 
@@ -58,6 +58,8 @@ PipelineRenderer::PipelineRenderer(const ShaderPipeline *parent)
 }
 
 QOpenGLShaderProgram *PipelineRenderer::linkFragment(QString const& frag) {
+    qDebug();
+
     QFile fragfile(frag);
     fragfile.open(QFile::ReadOnly);
 
@@ -69,72 +71,78 @@ QOpenGLShaderProgram *PipelineRenderer::linkFragment(QString const& frag) {
 }
 
 void PipelineRenderer::initFbo() {
+    qDebug();
+
     QOpenGLExtraFunctions *f = QOpenGLContext::currentContext()->extraFunctions();
 
     if (! m_fbo[0] || m_fbo[0]->size() != m_size) {
         Q_ASSERT(m_item->inputs().size() == 2);
         for (int i = 0; i < 2; ++i) {
+            qDebug() << "init FBO" << i << m_size;
+
             delete m_fbo[i];
             m_fbo[i] = new QOpenGLFramebufferObject(m_size,
                                       QOpenGLFramebufferObject::NoAttachment,
                                       GL_TEXTURE_2D, GL_RGBA16F);
+
+            qDebug() << "add attachment";
             m_fbo[i]->addColorAttachment(m_size, GL_RGBA16F);
+
             f->glBindTexture(GL_TEXTURE_2D, m_fbo[i]->texture());
-            f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-            f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+            f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
     }
 }
 
 void PipelineRenderer::render() {
     render(m_pipeline);
+    m_item->window()->resetOpenGLState();
 }
 
 void PipelineRenderer::render(PipelineItem *pipeline) {
-    auto f = QOpenGLContext::currentContext()->extraFunctions();
+    if (pipeline->program) {
+        auto f = QOpenGLContext::currentContext()->extraFunctions();
 
-    // Render item
+//        // if `outputs` is not empty render to FBO
+//        if (!pipeline->outputs.empty()) {
+//            m_item->window()->resetOpenGLState();
+//            f->glViewport(0, 0, m_size.width(), m_size.height());
+//        }
 
-    m_vao->bind();
-    pipeline->program->bind();
+        m_vao->bind();
+        pipeline->program->bind();
 
-    // Bind all input FBOs
-    auto const &cfbo_textures = m_fbo[m_cfbo]->textures();
-    for (unsigned i = 0; i < std::min(pipeline->inputs.size(), 32); ++i) {
-        auto texture_index = pipeline->inputs[i];
-        f->glActiveTexture(GL_TEXTURE0 + i);
-        f->glBindTexture(GL_TEXTURE_2D, cfbo_textures[texture_index]);
+        const QVector<GLuint> cfbo_textures[2] = {
+            m_fbo[0]->textures(),
+            m_fbo[1]->textures()
+        };
+
+        m_fbo[!m_cfbo]->bind();
+
+        for (int i = 0; i < std::min(pipeline->inputs.size(), 32); ++i) {
+            // FIXME: only bind used textures
+            Q_ASSERT(m_item->inputs().size() == 2);
+            f->glActiveTexture(GL_TEXTURE0 + i);
+            f->glBindTexture(GL_TEXTURE_2D, cfbo_textures[m_cfbo][i]);
+
+            if (pipeline->inputs[i] >= 0)
+                pipeline->program->setUniformValue(pipeline->inputs[i], GL_TEXTURE0 + i);
+        }
+
+        f->glDrawArrays(GL_TRIANGLES, 0, 6);
+        m_fbo[!m_cfbo]->release();
+
+        m_vao->release();
+
+        m_cfbo = !m_cfbo;
+    } else if (!pipeline->subroutine.empty()) {
+        foreach (PipelineItem *subroutine, pipeline->subroutine) {
+            render(subroutine);
+        }
     }
 
-    f->glDrawArrays(GL_TRIANGLES, 0, 6);
-    m_vao->release();
-
-//    // Render to FBO
-
-//    m_item->window()->resetOpenGLState();
-//    f->glViewport(0, 0, m_size.width(), m_size.height());
-
-//    m_vao->bind();
-
-//    for (unsigned i = 0; i < m_iterations; ++i) {
-////        m_fbo[!m_cfbo]->bind();
-////        f->glActiveTexture(GL_TEXTURE0);
-////        f->glBindTexture(GL_TEXTURE_2D, m_fbo[m_cfbo]->textures()[0]);
-////        f->glActiveTexture(GL_TEXTURE1);
-////        f->glBindTexture(GL_TEXTURE_2D, m_fbo[m_cfbo]->textures()[1]);
-
-////        m_progFluid->bind();
-////        f->glDrawArrays(GL_TRIANGLES, 0, 6);
-////        m_fbo[!m_cfbo]->release();
-
-//        m_cfbo = !m_cfbo;
-//    }
-
-//    m_vao->release();
-
-
-    // Reset state
-    m_item->window()->resetOpenGLState();
+    update();
 }
 
 void PipelineRenderer::synchronize(QQuickFramebufferObject *item) {
@@ -166,13 +174,29 @@ void PipelineRenderer::synchronize(QQuickFramebufferObject *item) {
     m_initialized = true;
 }
 
-PipelineItem * PipelineRenderer::buildPipeline(ShaderPipeline *item) {
-    auto *ret = new PipelineItem{0};
 
-    ret->inputs = {};
-    ret->outputs = {};
-    ret->repeat = item->repeat();
-    ret->program = linkFragment(item->fragment());
+PipelineItem * PipelineRenderer::buildPipeline(ShaderPipeline *item) {
+    qDebug() << item;
+
+    // FIXME: use managed pointers to fix memeory leaks
+    auto *pipeline = new PipelineItem{0};
+
+    pipeline->inputs = {};
+    pipeline->outputs = {};
+    pipeline->repeat = item->repeat();
+
+    if (!item->fragment().isNull()) {
+        pipeline->program = linkFragment(item->fragment());
+        pipeline->program->bind();
+
+        foreach (auto const& input, item->inputs()) {
+            auto uniform = pipeline->program->uniformLocation("dom");
+            if (uniform < 0) {
+                qCritical() << "invalid shader input:" << input;
+            }
+            pipeline->inputs.push_back(uniform);
+        }
+    }
 
     foreach (auto const& child, item->children()) {
         if (! child->inherits("ShaderPipeline")) {
@@ -180,9 +204,16 @@ PipelineItem * PipelineRenderer::buildPipeline(ShaderPipeline *item) {
             continue;
         }
 
-        ret->subroutine->push_back(buildPipeline(qobject_cast<ShaderPipeline *>(child)));
+        pipeline->subroutine.push_back(buildPipeline(qobject_cast<ShaderPipeline *>(child)));
     }
 
-    return ret;
+    if (pipeline->program && !pipeline->subroutine.empty()) {
+        delete pipeline->program;
+        pipeline->program = nullptr;
+        pipeline->subroutine.clear();
+        qCritical() << "cannot have fragment shader and subroutines in same ShaderPipeline";
+    }
+
+    return pipeline;
 }
 

@@ -9,10 +9,12 @@ uniform sampler2D dom;
 uniform sampler2D den;
 
 in highp vec2 uv;
-layout(location = 0) out highp vec4 dom_out;
-layout(location = 1) out highp vec4 den_out;
+
+layout(location = 0) out highp vec4 outcolor;
 
 void main(void) {
+    vec4 _dom = texture(dom, uv);
+    vec4 _den = texture(den, uv);
     dom_out = vec4(0.0, 1.0, 0.0, 1.0);
     den_out = vec4(0.0, 1.0, 0.0, 1.0);
 }

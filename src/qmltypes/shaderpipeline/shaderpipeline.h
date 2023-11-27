@@ -48,7 +48,6 @@ public slots:
     }
 
 private:
-    unsigned m_iterations;
     bool m_running = true;
 
     QString m_name;

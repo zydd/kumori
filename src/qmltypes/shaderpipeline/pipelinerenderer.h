@@ -26,10 +26,9 @@ private:
     const ShaderPipeline *m_item;
     PipelineItem *m_pipeline;
     QOpenGLBuffer *m_vbo;
-    QOpenGLFramebufferObject *m_fbo[2];
+    QOpenGLFramebufferObject *m_fbo[2] = {0};
     QOpenGLVertexArrayObject *m_vao;
-    unsigned m_cfbo;
-    unsigned m_iterations;
+    unsigned m_cfbo = 0;
     bool m_initialized = false;
 
     void initFbo();

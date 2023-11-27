@@ -48,13 +48,13 @@ int main(int argc, char *argv[]) {
     qmlRegisterSingletonType<Ohm>("kumori", 0, 1, "Ohm", &Ohm::instance);
 #endif
 
-    QSurfaceFormat::setDefaultFormat([]{
-        QSurfaceFormat format;
-        format.setRenderableType(QSurfaceFormat::OpenGLES);
-        format.setProfile(QSurfaceFormat::CoreProfile);
-        format.setVersion(3, 0);
-        return format;
-    }());
+//    QSurfaceFormat::setDefaultFormat([]{
+//        QSurfaceFormat format;
+//        format.setRenderableType(QSurfaceFormat::OpenGLES);
+//        format.setProfile(QSurfaceFormat::CoreProfile);
+//        format.setVersion(3, 0);
+//        return format;
+//    }());
 
 //    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);

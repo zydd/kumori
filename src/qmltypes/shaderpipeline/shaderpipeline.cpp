@@ -2,6 +2,7 @@
 #include "pipelinerenderer.h"
 
 QOpenGLFramebufferObject *PipelineRenderer::createFramebufferObject(const QSize &size) {
+    qDebug() << size;
     return new QOpenGLFramebufferObject(size, QOpenGLFramebufferObject::NoAttachment);
 }
 
