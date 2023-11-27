@@ -3,15 +3,22 @@
 #include <qcoreevent.h>
 #include <qdebug.h>
 #include <qoperatingsystemversion.h>
+#include <qwinfunctions.h>
 
 #include <Windows.h>
 #include <dwmapi.h>
 #include <processthreadsapi.h>
 #include <winuser.h>
 
+#include "trayicon.h"
+
 NativeWindow::NativeWindow(HWND hwnd, QObject *parent)
     : QObject{parent}, _hwnd{hwnd}
 { }
+
+NativeWindow::~NativeWindow() {
+    delete _icon;
+}
 
 
 bool NativeWindow::canAddToTaskbar() {
@@ -77,6 +84,8 @@ bool NativeWindow::canAddToTaskbar() {
         return false;
     }
 
+    loadIcon();
+
     return true;
 }
 
@@ -132,6 +141,25 @@ void NativeWindow::maximize() {
 
 void NativeWindow::makeForeground() {
     SetForegroundWindow(GetLastActivePopup(_hwnd));
+}
+
+
+void NativeWindow::loadIcon() {
+    qDebug() << _hwnd;
+
+    HICON hIcon = (HICON)SendMessage(_hwnd, WM_GETICON, ICON_SMALL2, 0);
+    if (hIcon == NULL) // If the window does not have an icon, try to get the icon from its class.
+        hIcon = (HICON)GetClassLongPtr(_hwnd, GCLP_HICONSM);
+    if (hIcon == NULL) // If the class does not have an icon, get the default icon.
+        hIcon = LoadIcon(NULL, IDI_APPLICATION);
+
+    // FIXME: WinRT app icons
+    // TODO: Update icons dynamically
+
+    delete _icon;
+    _icon = new TrayIcon();
+    auto pixmap = QtWin::fromHICON(hIcon);
+    _icon->setIcon(pixmap);
 }
 
 

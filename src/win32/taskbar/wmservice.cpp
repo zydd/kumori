@@ -197,6 +197,8 @@ ushort WmServicePrivate::registerWindowClass(LPCWSTR name) {
 LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     auto hwndParam = reinterpret_cast<HWND>(lParam);
 
+    // FIXME: WinRT apps that are opened after WmService is started are not listed
+
     if (msg == staticData.WM_SHELLHOOKMESSAGE) {
         switch (wParam) {
         case HSHELL_GETMINRECT:

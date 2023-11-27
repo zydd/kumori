@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
 
     qmlRegisterSingletonType<Kumori>("kumori", 0, 1, "Kumori", &Kumori::instance);
 #ifdef Q_OS_WIN
+    qRegisterMetaType<TrayIcon *>();
     qmlRegisterType<TrayIconPainter>("kumori", 0, 1, "TrayIcon");
 
     qmlRegisterSingletonType<TrayService>("kumori", 0, 1, "TrayService", &TrayService::instance);
