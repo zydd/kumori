@@ -33,11 +33,14 @@ struct TrayService::TrayServicePrivate {
     HWND registerNotifyWindow();
     HWND registerTrayWindow();
 
+    void destroyNotifyWindow();
+    void destroyTrayWindow();
+
     LRESULT forwardToSystemTray(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
-static TrayService *trayService = nullptr;
+static QPointer<TrayService> trayService = nullptr;
 
 #pragma pack(push, 1)
 struct SHELLTRAYDATA {
@@ -106,14 +109,18 @@ void TrayService::init() {
 TrayService::~TrayService() {
     qDebug();
     restoreSystemTaskbar();
+    d->destroyNotifyWindow();
+    d->destroyTrayWindow();
     delete this->d;
 }
 
 QObject *TrayService::instance(QQmlEngine *, QJSEngine *) {
-    qDebug();
+    qDebug() << ::trayService;
 
-    if (!::trayService)
+    if (!::trayService) {
         ::trayService = new TrayService();
+        qDebug() << "new:" << ::trayService;
+    }
 
     return ::trayService;
 }
@@ -261,6 +268,18 @@ HWND TrayServicePrivate::registerTrayWindow() {
     }
 
     return hwndTray;
+}
+
+void TrayServicePrivate::destroyNotifyWindow() {
+    qDebug();
+    DestroyWindow(hwndNotify);
+    UnregisterClass(L"TrayNotifyWnd", hInstance);
+}
+
+void TrayServicePrivate::destroyTrayWindow() {
+    qDebug();
+    DestroyWindow(hwndTray);
+    UnregisterClass(L"Shell_TrayWnd", hInstance);
 }
 
 

@@ -20,15 +20,29 @@
 #include "win32/taskbar/wmservice.h"
 #endif
 
-QString userImportDir() {
+QString createUserImportDir() {
     QDir dir(Kumori::string("userImportDir"));
     dir.mkpath(dir.path());
 
-    QFile root(dir.filePath("Root.qml"));
+    QFile root(dir.filePath("main.qml"));
     if (! root.exists())
-        QFile::copy(Kumori::string("appImportDir") + "/Root.qml", root.fileName());
+        QFile::copy(Kumori::string("appImportDir") + "/main.qml", root.fileName());
 
     return dir.path();
+}
+
+QQmlApplicationEngine *loadQml(QUrl const& url) {
+    qDebug() << url;
+
+    QQmlApplicationEngine *engine = new QQmlApplicationEngine();
+
+    engine->addImageProvider("shellIcon", new ShellIconProvider);
+    engine->addImportPath(Kumori::string("appImportDir"));
+    engine->load(url);
+
+//    auto window = qobject_cast<QWindow *>(engine->rootObjects().first());
+
+    return engine;
 }
 
 int main(int argc, char *argv[]) {
@@ -66,32 +80,10 @@ int main(int argc, char *argv[]) {
 
     Kumori kumori(app.arguments());
 
-    auto const userImports = userImportDir();
-    auto const qmlDir = Kumori::string("appImportDir");
-    auto const url = QUrl::fromLocalFile(qmlDir + "/main.qml");
+    auto const userImports = createUserImportDir();
+    auto const url = QUrl::fromLocalFile(userImports + "/main.qml");
 
-    QQmlApplicationEngine engine;
-
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
-                     &app, [url](QObject *obj, const QUrl &objUrl) {
-        if (!obj && url == objUrl)
-            QCoreApplication::exit(-1);
-    }, Qt::QueuedConnection);
-
-    engine.addImportPath(qmlDir);
-    engine.addImportPath(userImports);
-    engine.addImageProvider("shellIcon", new ShellIconProvider);
-    engine.load(url);
-
-    if (engine.rootObjects().empty())
-        QCoreApplication::exit(-1);
-
-    Q_ASSERT(!engine.rootObjects().empty());
-    auto window = qobject_cast<QWindow *>(engine.rootObjects()[0]);
-
-    window->setGeometry(window->screen()->geometry());
-    QObject::connect(window->screen(), &QScreen::geometryChanged,
-                     window, qOverload<QRect const&>(&QWindow::setGeometry));
+    QPointer<QQmlApplicationEngine> engine = loadQml(url);
 
     auto watcher = new QFileSystemWatcher;
     auto const monitoredFileTypes = Kumori::config("monitoredFileTypes").toStringList();
@@ -118,10 +110,22 @@ int main(int argc, char *argv[]) {
         for (QFileInfo const& e : dir.entryInfoList(monitoredFileTypes, QDir::Files))
             watcher->addPath(e.filePath());
     });
-    QObject::connect(watcher, SIGNAL(fileChanged(QString)), window, SLOT(reload()));
+
+    // Reload application when files are changed
+    QObject::connect(watcher, &QFileSystemWatcher::fileChanged, [&]{
+        QObject::connect(engine, &QQmlApplicationEngine::destroyed, [&]{
+            engine = loadQml(url);
+        });
+        engine->deleteLater();
+    });
 
     watchDir(userImports);
-    watchDir(qmlDir);
+    watchDir(Kumori::string("appImportDir"));
+
+
+    QObject::connect(&app, &QGuiApplication::aboutToQuit, [&]{
+        engine->deleteLater();
+    });
 
     return app.exec();
 }

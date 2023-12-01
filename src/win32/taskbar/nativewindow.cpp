@@ -84,6 +84,8 @@ bool NativeWindow::canAddToTaskbar() {
         return false;
     }
 
+    qDebug() << "visible window" << title();
+
     loadIcon();
 
     return true;

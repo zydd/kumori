@@ -3,6 +3,7 @@
 
 #include <qdebug.h>
 #include <qlibrary.h>
+#include <qpointer.h>
 #include <qwinfunctions.h>
 
 #include <Windows.h>
@@ -27,11 +28,12 @@ struct WmService::WmServicePrivate {
 
     ushort registerWindowClass(LPCWSTR name);
     HWND createTaskmanWindow();
+    void destroyTaskmanWindow();
 
     static LRESULT CALLBACK wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
-static WmService *wmService = nullptr;
+static QPointer<WmService> wmService = nullptr;
 
 decltype(WmServicePrivate::staticData) WmServicePrivate::staticData;
 
@@ -49,6 +51,7 @@ WmService::WmService(QObject *parent)
 
 WmService::~WmService() {
     qDebug();
+    d->destroyTaskmanWindow();
     delete this->d;
 }
 
@@ -84,10 +87,12 @@ QHash<int, QByteArray> WmService::roleNames() const {
 
 
 QObject *WmService::instance(QQmlEngine *, QJSEngine *) {
-    qDebug();
+    qDebug() << ::wmService;
 
-    if (!::wmService)
+    if (!::wmService) {
         ::wmService = new WmService();
+        qDebug() << "new:" << ::wmService;
+    }
 
     return ::wmService;
 }
@@ -180,6 +185,12 @@ HWND WmServicePrivate::createTaskmanWindow() {
     return hwndTaskm;
 }
 
+void WmServicePrivate::destroyTaskmanWindow() {
+    qDebug();
+    DestroyWindow(hwndTaskm);
+    UnregisterClass(L"KumoriTaskmanWindow", hInstance);
+}
+
 
 ushort WmServicePrivate::registerWindowClass(LPCWSTR name) {
     qDebug() << QString::fromWCharArray(name);
@@ -198,6 +209,7 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
     auto hwndParam = reinterpret_cast<HWND>(lParam);
 
     // FIXME: WinRT apps that are opened after WmService is started are not listed
+    // maybe the window is initially cloaked and that changes with a REDRAW event?
 
     if (msg == staticData.WM_SHELLHOOKMESSAGE) {
         switch (wParam) {
@@ -273,6 +285,7 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
             qDebug() << "REDRAW" << hwndParam;
             auto itr = wmService->_hwndIndex.find(hwndParam);
             if (itr != wmService->_hwndIndex.end() && itr.value() >= 0) {
+                // FIXME: index out of bonds when window title changes after another window is closed
                 auto wnd = wmService->_windowList[itr.value()];
                 emit wnd->titleChanged();
             }
@@ -302,6 +315,7 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
 
 
 void WmService::enumerateWindows() {
+    qDebug();
     Q_ASSERT(_windowList.size() == 0);
 
     struct WindowList {

@@ -1,64 +1,14 @@
-import QtQuick 2.12
-import QtQuick.Window 2.12
-import QtQuick.Controls 2.12
-import QtQuick.Layouts 1.12
-import QtGraphicalEffects 1.0
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
+import QtQuick.Window 2.15
 import kumori 0.1
 
-Window {
-    id: base
-    color: 'black'
-    flags: Qt.WindowStaysOnBottomHint | Qt.FramelessWindowHint
 
-    property var window
-    property var rootitem
-    property var error
+ApplicationWindow {
+    id: tbar
+    visible: true
 
-    Timer {
-        id: timer
-        running: true
-        repeat: false
-        interval: 300
-        onTriggered: {
-            console.log('loading UI')
-            base.visible = false
-
-            if (rootitem)
-                rootitem.destroy()
-
-            if (window)
-                window.destroy()
-
-            if (error)
-                error.destroy()
-
-            Kumori.clearComponentCache()
-
-            window = Qt.createQmlObject('import QtQuick.Window 2.15; Window { color: "transparent";'
-                                        + 'flags: Qt.WindowStaysOnBottomHint | Qt.FramelessWindowHint | Qt.SubWindow }',
-                                        base)
-
-            var component = Qt.createComponent('file:///' + Kumori.userImportDir + '/Root.qml');
-            if (component.status === Component.Ready) {
-                rootitem = component.createObject(window);
-                window.x = Qt.binding(() => base.x)
-                window.y = Qt.binding(() => base.y)
-                window.width = Qt.binding(() => base.width)
-                window.height = Qt.binding(() => base.height)
-                window.showNormal()
-            } else {
-                showError(component.errorString())
-            }
-        }
-    }
-
-    function showError(msg) {
-        console.log(msg)
-        if (window) window.destroy()
-        error = Qt.createQmlObject('import QtQuick 2.15; Text { color: "white"; text: "' + msg +
-                                   '"; wrapMode: Text.Wrap; anchors.fill: parent; }', base)
-        base.visible = true
-    }
-
-    function reload() { timer.restart() }
+    onClosing: Qt.quit()
 }
+
