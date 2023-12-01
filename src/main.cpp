@@ -80,8 +80,11 @@ int main(int argc, char *argv[]) {
 
     Kumori kumori(app.arguments());
 
-    auto const userImports = createUserImportDir();
-    auto const url = QUrl::fromLocalFile(userImports + "/main.qml");
+    auto const userImportDir = createUserImportDir();
+    auto const appImportDir = Kumori::string("appImportDir");
+    qDebug() << "appImportDir:" << appImportDir;
+    qDebug() << "userImportDir:" << userImportDir;
+    auto const url = QUrl::fromLocalFile(userImportDir + "/main.qml");
 
     QPointer<QQmlApplicationEngine> engine = loadQml(url);
 
@@ -119,9 +122,8 @@ int main(int argc, char *argv[]) {
         engine->deleteLater();
     });
 
-    watchDir(userImports);
-    watchDir(Kumori::string("appImportDir"));
-
+    watchDir(userImportDir);
+    watchDir(appImportDir);
 
     QObject::connect(&app, &QGuiApplication::aboutToQuit, [&]{
         engine->deleteLater();
