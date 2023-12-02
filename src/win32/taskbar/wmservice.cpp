@@ -19,6 +19,7 @@ struct WmService::WmServicePrivate {
     HWND hwndTaskm;
     HWND hwndTray;
     HWND hwndSystemTray;
+    HWINEVENTHOOK uncloakEventHook;
 
     static struct {
         int WM_SHELLHOOKMESSAGE;
@@ -29,8 +30,12 @@ struct WmService::WmServicePrivate {
     ushort registerWindowClass(LPCWSTR name);
     HWND createTaskmanWindow();
     void destroyTaskmanWindow();
+    void installUncloakEventHook();
 
     static LRESULT CALLBACK wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    static void CALLBACK uncloakEventProc(HWINEVENTHOOK hook, DWORD event, HWND hwnd,
+                                          LONG idObject, LONG idChild,
+                                          DWORD dwEventThread, DWORD dwmsEventTime);
 };
 
 static QPointer<WmService> wmService = nullptr;
@@ -51,6 +56,7 @@ WmService::WmService(QObject *parent)
 
 WmService::~WmService() {
     qDebug();
+    UnhookWinEvent(d->uncloakEventHook);
     d->destroyTaskmanWindow();
     delete this->d;
 }
@@ -144,6 +150,8 @@ void WmService::init() {
     RemoveProp(d->hwndSystemTray, L"TaskbandHWND");
     SetProp(d->hwndTray, L"TaskbandHWND", hwndTaskm);
 
+    d->installUncloakEventHook();
+
     enumerateWindows();
 
     d->initialized = true;
@@ -196,6 +204,17 @@ void WmServicePrivate::destroyTaskmanWindow() {
     UnregisterClass(L"KumoriTaskmanWindow", hInstance);
 }
 
+void WmServicePrivate::installUncloakEventHook() {
+    uncloakEventHook = SetWinEventHook(
+        EVENT_OBJECT_UNCLOAKED,
+        EVENT_OBJECT_UNCLOAKED,
+        nullptr,
+        uncloakEventProc,
+        0,
+        0,
+        WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+}
+
 
 ushort WmServicePrivate::registerWindowClass(LPCWSTR name) {
     qDebug() << QString::fromWCharArray(name);
@@ -223,17 +242,18 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
             break;
         case HSHELL_RUDEAPPACTIVATED: {
             qDebug() << "RUDEAPPACTIVATED" << hwndParam;
-            auto wnd = wmService->window(hwndParam);
+            if (hwndParam) {
+                auto wnd = wmService->window(hwndParam);
 
-//            if (!wnd->listed() && wnd->canAddToTaskbar())
-//                wmService->list(wnd);
+    //            if (!wnd->listed() && wnd->canAddToTaskbar())
+    //                wmService->list(wnd);
 
-            if (wmService->_activeWindow)
-                wmService->_activeWindow->setActive(false);
+                if (wmService->_activeWindow)
+                    wmService->_activeWindow->setActive(false);
 
-            wmService->_activeWindow = wnd;
-            wnd->setActive(true);
-
+                wmService->_activeWindow = wnd;
+                wnd->setActive(true);
+            }
             break;
         }
         case HSHELL_WINDOWREPLACING:
@@ -244,7 +264,9 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
             break;
         case HSHELL_WINDOWCREATED: {
             qDebug() << "WINDOWCREATED" << hwndParam;
-            wmService->window(hwndParam);
+            auto wnd = wmService->window(hwndParam);
+            if (wnd->canAddToTaskbar() && !wnd->cloaked())
+                wmService->list(wnd);
             break;
         }
         case HSHELL_WINDOWDESTROYED: {
@@ -264,16 +286,16 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
 
             emit wnd->titleChanged();
 
-            qDebug() << "listed:" << wnd->listed();
+            qDebug() << "listed:" << wnd->cloaked();
 
-            if (wnd->listed() != wnd->canAddToTaskbar()) {
-                qDebug() << "list status changed:" << wnd->listed();
-                if (wnd->listed()) {
-                    wmService->unlist(wnd);
-                } else {
-                    wmService->list(wnd);
-                }
-            }
+//            if (wnd->listed() != wnd->canAddToTaskbar()) {
+//                qDebug() << "list status changed:" << wnd->listed();
+//                if (wnd->listed()) {
+//                    wmService->unlist(wnd);
+//                } else {
+//                    wmService->list(wnd);
+//                }
+//            }
         }
             break;
         case HSHELL_FLASH:
@@ -298,6 +320,14 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+void WmServicePrivate::uncloakEventProc(
+        HWINEVENTHOOK /*hook*/, DWORD /*event*/, HWND hwnd, LONG /*idObject*/,
+        LONG /*idChild*/, DWORD /*dwEventThread*/, DWORD /*dwmsEventTime*/) {
+    auto wnd = wmService->_nativeWindows.value(hwnd);
+    if (wnd && wnd->canAddToTaskbar())
+        wmService->list(wnd);
+}
+
 
 NativeWindow *WmService::window(HWND hwnd) {
     auto wnd = _nativeWindows.value(hwnd);
@@ -305,7 +335,7 @@ NativeWindow *WmService::window(HWND hwnd) {
         wnd = new NativeWindow{hwnd};
         _nativeWindows[hwnd] = wnd;
 
-//        if (wnd->canAddToTaskbar())
+//        if (wnd->canAddToTaskbar() && !wnd->cloaked())
 //            list(wnd);
     }
     return wnd;
@@ -325,7 +355,7 @@ void WmService::destroyWindow(HWND hwnd) {
 }
 
 void WmService::list(NativeWindow *wnd) {
-    qDebug() << wnd;
+    qDebug() << wnd->hwnd();
     Q_ASSERT(!wnd->listed());
 
     auto index = _listedWindows.size();
@@ -337,7 +367,7 @@ void WmService::list(NativeWindow *wnd) {
 }
 
 void WmService::unlist(NativeWindow *wnd) {
-    qDebug() << wnd;
+    qDebug() << wnd->hwnd();
     Q_ASSERT(wnd->listed());
 
     auto index = std::distance(_listedWindows.begin(), std::find(_listedWindows.begin(), _listedWindows.end(), wnd));

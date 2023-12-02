@@ -26,14 +26,14 @@ NativeWindow::~NativeWindow() {
 
 bool NativeWindow::canAddToTaskbar() {
     int extendedWindowStyles = GetWindowLong(_hwnd, GWL_EXSTYLE);
-//    bool isWindow = IsWindow(_hwnd);
+    bool isWindow = IsWindow(_hwnd);
     bool isVisible = IsWindowVisible(_hwnd);
     bool isToolWindow = (extendedWindowStyles & WS_EX_TOOLWINDOW) != 0;
     bool isAppWindow = (extendedWindowStyles & WS_EX_APPWINDOW) != 0;
     bool isNoActivate = (extendedWindowStyles & WS_EX_NOACTIVATE) != 0;
     auto ownerWin = GetWindow(_hwnd, GW_OWNER);
 
-    bool canShow = isVisible && (ownerWin == nullptr || isAppWindow)
+    bool canShow = isWindow && isVisible && (ownerWin == nullptr || isAppWindow)
             && (!isNoActivate || isAppWindow) && !isToolWindow;
 
     if (!canShow) {
@@ -41,41 +41,41 @@ bool NativeWindow::canAddToTaskbar() {
         return false;
     }
 
-//    DWORD pid = 0;
-//    GetWindowThreadProcessId(_hwnd, &pid);
-//    QString processName;
-//    if (pid) {
-//        // open process
-//        // QueryLimitedInformation flag allows us to access elevated applications as well
-//        auto hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+    DWORD pid = 0;
+    GetWindowThreadProcessId(_hwnd, &pid);
+    QString processName;
+    if (pid) {
+        // open process
+        // QueryLimitedInformation flag allows us to access elevated applications as well
+        auto hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
 
-//        // get path
-//        WCHAR _processName[1024];
-//        DWORD processNameLength = sizeof(_processName) / sizeof(*_processName);
-//        QueryFullProcessImageName(hProc, 0, _processName, &processNameLength);
-//        processName = QString::fromWCharArray(_processName, processNameLength);
-//    }
+        // get path
+        WCHAR _processName[1024];
+        DWORD processNameLength = sizeof(_processName) / sizeof(*_processName);
+        QueryFullProcessImageName(hProc, 0, _processName, &processNameLength);
+        processName = QString::fromWCharArray(_processName, processNameLength);
+    }
 
-//    // UWP shell windows that are not cloaked should be hidden from the taskbar, too.
-//    WCHAR _windowClass[256];
-//    GetClassName(_hwnd, _windowClass, sizeof(_windowClass) / sizeof(*_windowClass));
-//    auto windowClass = QString::fromWCharArray(_windowClass);
-//    if (windowClass == "ApplicationFrameWindow" || windowClass == "Windows.UI.Core.CoreWindow") {
-//        if ((GetWindowLong(_hwnd, GWL_EXSTYLE) & WS_EX_WINDOWEDGE) == 0) {
-//            qDebug() << "UWP non-window:" << _hwnd << title();
-//            return false;
-//        }
-//    } else if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10
-//               && (windowClass == "ImmersiveBackgroundWindow"
-//                   || windowClass == "SearchPane"
-//                   || windowClass == "NativeHWNDHost"
-//                   || windowClass == "Shell_CharmWindow"
-//                   || windowClass == "ImmersiveLauncher")
-//               && processName.toLower().contains("explorer.exe")
-//            ) {
-//        qDebug() << "immersive shell window: " << _hwnd << title();
-//        return false;
-//    }
+    // UWP shell windows that are not cloaked should be hidden from the taskbar, too.
+    WCHAR _windowClass[256];
+    GetClassName(_hwnd, _windowClass, sizeof(_windowClass) / sizeof(*_windowClass));
+    auto windowClass = QString::fromWCharArray(_windowClass);
+    if (windowClass == "ApplicationFrameWindow" || windowClass == "Windows.UI.Core.CoreWindow") {
+        if ((GetWindowLong(_hwnd, GWL_EXSTYLE) & WS_EX_WINDOWEDGE) == 0) {
+            qDebug() << "UWP non-window:" << _hwnd << title();
+            return false;
+        }
+    } else if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10
+               && (windowClass == "ImmersiveBackgroundWindow"
+                   || windowClass == "SearchPane"
+                   || windowClass == "NativeHWNDHost"
+                   || windowClass == "Shell_CharmWindow"
+                   || windowClass == "ImmersiveLauncher")
+               && processName.toLower().contains("explorer.exe")
+            ) {
+        qDebug() << "immersive shell window: " << _hwnd << title();
+        return false;
+    }
 
     qDebug() << "visible window:" << _hwnd << title();
 
@@ -86,11 +86,11 @@ bool NativeWindow::canAddToTaskbar() {
 
 bool NativeWindow::cloaked() {
     BOOL cloaked = false;
-    DwmGetWindowAttribute(_hwnd, DWMWA_CLOAKED, &cloaked, sizeof(BOOL));
+    auto succeeded = SUCCEEDED(DwmGetWindowAttribute(_hwnd, DWMWA_CLOAKED, &cloaked, sizeof(BOOL)));
 
-    qDebug() << cloaked << _hwnd << title();
+    qDebug() << succeeded << cloaked << _hwnd << title();
 
-    return cloaked;
+    return succeeded && cloaked;
 }
 
 
@@ -144,6 +144,7 @@ void NativeWindow::maximize() {
 
 
 void NativeWindow::makeForeground() {
+    qDebug() << _hwnd;
     SetForegroundWindow(GetLastActivePopup(_hwnd));
 }
 
