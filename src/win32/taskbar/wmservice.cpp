@@ -406,6 +406,7 @@ void WmService::enumerateWindows() {
 
         if (wnd->canAddToTaskbar() && !wnd->cloaked()) {
             qDebug() << data->listedWindows.size() << hwnd << wnd->title();
+            wnd->loadIcon();
             wnd->setListed(true);
             data->listedWindows.push_back(wnd);
         }
