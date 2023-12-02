@@ -1,24 +1,21 @@
-#ifndef TRAYICON_H
-#define TRAYICON_H
+#ifndef LIVEICON_H
+#define LIVEICON_H
 
 #include <qpixmap.h>
 #include <qquickpainteditem.h>
 
-#include "trayservice.h"
-
-
-class TrayIcon : public QObject {
+class LiveIcon : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString tooltip READ tooltip WRITE setTooltip NOTIFY iconChanged)
 
 public:
-    inline TrayIcon() { }
+    inline LiveIcon() { }
 
     inline QString tooltip() { return _tooltip; }
     inline void setTooltip(QString tooltip) { this->_tooltip = tooltip; }
 
     inline QPixmap icon() { return _icon; }
-    inline void setIcon(QPixmap const& icon) { this->_icon = icon; }
+    void setIcon(QPixmap const& icon);
 
 private:
     QString _tooltip;
@@ -29,20 +26,20 @@ signals:
 };
 
 
-class TrayIconPainter : public QQuickPaintedItem {
+class LiveIconPainter : public QQuickPaintedItem {
     Q_OBJECT
-    Q_PROPERTY(QObject *trayIcon WRITE setTrayIconObject)
+    Q_PROPERTY(QObject *liveIcon WRITE setLiveIconObject)
 
 public:
-    inline TrayIconPainter(QQuickItem *parent = nullptr) :
+    inline LiveIconPainter(QQuickItem *parent = nullptr) :
         QQuickPaintedItem(parent)
     { }
 
-    void setTrayIconObject(QObject *newTrayIconObject);
+    void setLiveIconObject(QObject *newLiveIconObject);
     virtual void paint(QPainter *painter) override;
 
 private:
-    TrayIcon *_trayIcon;
+    LiveIcon *_liveIcon;
 };
 
-#endif // TRAYICON_H
+#endif // LIVEICON_H

@@ -10,12 +10,13 @@
 #include <processthreadsapi.h>
 #include <winuser.h>
 
-#include "trayicon.h"
+#include "liveicon.h"
 
 NativeWindow::NativeWindow(HWND hwnd, QObject *parent)
     : QObject{parent}, _hwnd{hwnd}
 {
     qDebug() << _hwnd;
+    _icon = new LiveIcon();
 }
 
 NativeWindow::~NativeWindow() {
@@ -78,9 +79,6 @@ bool NativeWindow::canAddToTaskbar() {
     }
 
     qDebug() << "visible window:" << _hwnd << title();
-
-    loadIcon();
-
     return true;
 }
 
@@ -161,8 +159,6 @@ void NativeWindow::loadIcon() {
     // FIXME: WinRT app icons
     // TODO: Update icons dynamically
 
-    delete _icon;
-    _icon = new TrayIcon();
     auto pixmap = QtWin::fromHICON(hIcon);
     _icon->setIcon(pixmap);
 }

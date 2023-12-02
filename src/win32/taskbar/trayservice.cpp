@@ -11,7 +11,7 @@
 #include <Windows.h>
 #include <CommCtrl.h>
 
-#include "trayicon.h"
+#include "liveicon.h"
 
 
 using TrayServicePrivate = TrayService::TrayServicePrivate;
@@ -27,7 +27,7 @@ struct TrayService::TrayServicePrivate {
 
     APPBARDATA trayPos;
 
-    std::unordered_map<HWND, TrayIcon *> iconData;
+    std::unordered_map<HWND, LiveIcon *> iconData;
 
     ushort registerWindowClass(LPCWSTR name);
     HWND registerNotifyWindow();
@@ -177,7 +177,7 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
 
             auto itr = ::trayService->d->iconData.find(trayData->nid.hWnd);
             if (itr == ::trayService->d->iconData.end()) {
-                itr = ::trayService->d->iconData.insert({trayData->nid.hWnd, new TrayIcon()}).first;
+                itr = ::trayService->d->iconData.insert({trayData->nid.hWnd, new LiveIcon()}).first;
 
                 qDebug() << "add icon:" << QString::fromWCharArray(trayData->nid.szTip);
 
@@ -188,7 +188,8 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
 
             if (trayData->nid.hIcon)
                 itr->second->setIcon(QtWin::fromHICON(trayData->nid.hIcon));
-            emit itr->second->iconChanged();
+            else
+                emit itr->second->iconChanged();
 
             break;
         }

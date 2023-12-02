@@ -283,6 +283,7 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
         case HSHELL_REDRAW: {
             qDebug() << "REDRAW" << hwndParam;
             auto wnd = wmService->window(hwndParam);
+            wnd->loadIcon();
 
             emit wnd->titleChanged();
 
@@ -356,7 +357,10 @@ void WmService::destroyWindow(HWND hwnd) {
 
 void WmService::list(NativeWindow *wnd) {
     qDebug() << wnd->hwnd();
-    Q_ASSERT(!wnd->listed());
+    if (wnd->listed()) {
+        qWarning() << "already listed";
+        return;
+    }
 
     auto index = _listedWindows.size();
     beginInsertRows({}, index, index);

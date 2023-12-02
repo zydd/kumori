@@ -6,13 +6,13 @@
 
 typedef struct HWND__ *HWND;
 
-class TrayIcon;
+class LiveIcon;
 
 class NativeWindow : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString title READ title NOTIFY titleChanged)
     Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged)
-    Q_PROPERTY(TrayIcon *icon READ icon CONSTANT)
+    Q_PROPERTY(LiveIcon *icon READ icon CONSTANT)
 
 public:
     explicit NativeWindow(HWND hwnd, QObject *parent = nullptr);
@@ -32,7 +32,7 @@ public:
     HWND hwnd() { return _hwnd; }
     QString title();
     bool active() const { return _active; }
-    TrayIcon *icon() { return _icon; }
+    LiveIcon *icon() { return _icon; }
 
     void setActive(bool newActive);
     inline void setListed(bool listed) { _listed = listed; }
@@ -40,7 +40,7 @@ public:
 private:
     HWND _hwnd;
     bool _active = false;
-    TrayIcon *_icon = nullptr;
+    LiveIcon *_icon = nullptr;
     bool _listed = false;
 
     void makeForeground();
