@@ -18,8 +18,6 @@ public:
     explicit NativeWindow(HWND hwnd, QObject *parent = nullptr);
     ~NativeWindow();
 
-    bool canAddToTaskbar();
-
     Q_INVOKABLE void toFront();
     Q_INVOKABLE void minimize();
     Q_INVOKABLE void restore();
@@ -27,6 +25,9 @@ public:
     bool minimized();
     int showStyle();
     void loadIcon();
+    inline bool listed() { return _listed; }
+    bool canAddToTaskbar();
+    bool cloaked();
 
     HWND hwnd() { return _hwnd; }
     QString title();
@@ -34,11 +35,13 @@ public:
     TrayIcon *icon() { return _icon; }
 
     void setActive(bool newActive);
+    inline void setListed(bool listed) { _listed = listed; }
 
 private:
     HWND _hwnd;
     bool _active = false;
     TrayIcon *_icon = nullptr;
+    bool _listed = false;
 
     void makeForeground();
 

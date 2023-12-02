@@ -29,11 +29,16 @@ private:
 
     WmServicePrivate *d = nullptr;
     QHash<int, QByteArray> _roleNames;
-    QVector<NativeWindow *> _windowList;
-    QHash<HWND, int> _hwndIndex;
+    QVector<NativeWindow *> _listedWindows;
+    QHash<HWND, NativeWindow *> _nativeWindows;
     NativeWindow *_activeWindow = nullptr;
 
     void enumerateWindows();
+
+    NativeWindow *window(HWND hwnd);
+    void destroyWindow(HWND hwnd);
+    void list(NativeWindow *wnd);
+    void unlist(NativeWindow *wnd);
 
 signals:
 

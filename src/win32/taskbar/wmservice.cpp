@@ -64,7 +64,7 @@ QModelIndex WmService::parent(const QModelIndex &child) const {
 }
 
 int WmService::rowCount(const QModelIndex &parent) const {
-    return _windowList.size();
+    return _listedWindows.size();
 }
 
 int WmService::columnCount(const QModelIndex &parent) const {
@@ -72,9 +72,13 @@ int WmService::columnCount(const QModelIndex &parent) const {
 }
 
 QVariant WmService::data(const QModelIndex &index, int role) const {
+    Q_ASSERT(index.row() < _listedWindows.size());
+
     switch (role) {
-    case IdRole:    return 0;
-    case NativeWindowRole: return QVariant::fromValue(_windowList[index.row()]);
+    case IdRole:
+        return 0;
+    case NativeWindowRole:
+        return QVariant::fromValue(_listedWindows[index.row()]);
     }
 
     Q_ASSERT(false);
@@ -185,6 +189,7 @@ HWND WmServicePrivate::createTaskmanWindow() {
     return hwndTaskm;
 }
 
+
 void WmServicePrivate::destroyTaskmanWindow() {
     qDebug();
     DestroyWindow(hwndTaskm);
@@ -208,28 +213,27 @@ ushort WmServicePrivate::registerWindowClass(LPCWSTR name) {
 LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     auto hwndParam = reinterpret_cast<HWND>(lParam);
 
-    // FIXME: WinRT apps that are opened after WmService is started are not listed
-    // maybe the window is initially cloaked and that changes with a REDRAW event?
-
     if (msg == staticData.WM_SHELLHOOKMESSAGE) {
         switch (wParam) {
         case HSHELL_GETMINRECT:
             qDebug() << "GETMINRECT" << hwndParam;
             break;
         case HSHELL_WINDOWACTIVATED:
+            qDebug() << "WINDOWACTIVATED" << hwndParam;
             break;
         case HSHELL_RUDEAPPACTIVATED: {
             qDebug() << "RUDEAPPACTIVATED" << hwndParam;
-            auto itr = wmService->_hwndIndex.find(hwndParam);
-            if (itr != wmService->_hwndIndex.end() && itr.value() >= 0) {
-                auto wnd = wmService->_windowList[itr.value()];
+            auto wnd = wmService->window(hwndParam);
 
-                if (wmService->_activeWindow)
-                    wmService->_activeWindow->setActive(false);
+//            if (!wnd->listed() && wnd->canAddToTaskbar())
+//                wmService->list(wnd);
 
-                wmService->_activeWindow = wnd;
-                wnd->setActive(true);
-            }
+            if (wmService->_activeWindow)
+                wmService->_activeWindow->setActive(false);
+
+            wmService->_activeWindow = wnd;
+            wnd->setActive(true);
+
             break;
         }
         case HSHELL_WINDOWREPLACING:
@@ -240,39 +244,12 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
             break;
         case HSHELL_WINDOWCREATED: {
             qDebug() << "WINDOWCREATED" << hwndParam;
-            auto wnd = new NativeWindow{hwndParam};
-            if (wnd->canAddToTaskbar()) {
-                auto index = wmService->_windowList.size();
-                wmService->beginInsertRows({}, index, index);
-                wmService->_hwndIndex[hwndParam] = index;
-                wmService->_windowList.push_back(wnd);
-                wmService->endInsertRows();
-            } else {
-                delete wnd;
-                wmService->_hwndIndex[hwndParam] = -1;
-            }
+            wmService->window(hwndParam);
             break;
         }
         case HSHELL_WINDOWDESTROYED: {
             qDebug() << "WINDOWDESTROYED" << hwndParam;
-            auto itr = wmService->_hwndIndex.find(hwndParam);
-            if (itr != wmService->_hwndIndex.end()) {
-                if (itr.value() >= 0) {
-                    auto index = itr.value();
-                    wmService->beginRemoveRows({}, index, index);
-                    auto wnd = wmService->_windowList[index];
-
-                    wmService->_windowList.remove(index);
-
-                    if (wmService->_activeWindow == wnd)
-                        wmService->_activeWindow = nullptr;
-
-                    delete wnd;
-                    wmService->endRemoveRows();
-                }
-
-                wmService->_hwndIndex.remove(hwndParam);
-            }
+            wmService->destroyWindow(hwndParam);
             break;
         }
         case HSHELL_ACTIVATESHELLWINDOW:
@@ -283,11 +260,19 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
             break;
         case HSHELL_REDRAW: {
             qDebug() << "REDRAW" << hwndParam;
-            auto itr = wmService->_hwndIndex.find(hwndParam);
-            if (itr != wmService->_hwndIndex.end() && itr.value() >= 0) {
-                // FIXME: index out of bonds when window title changes after another window is closed
-                auto wnd = wmService->_windowList[itr.value()];
-                emit wnd->titleChanged();
+            auto wnd = wmService->window(hwndParam);
+
+            emit wnd->titleChanged();
+
+            qDebug() << "listed:" << wnd->listed();
+
+            if (wnd->listed() != wnd->canAddToTaskbar()) {
+                qDebug() << "list status changed:" << wnd->listed();
+                if (wnd->listed()) {
+                    wmService->unlist(wnd);
+                } else {
+                    wmService->list(wnd);
+                }
             }
         }
             break;
@@ -314,13 +299,68 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
 }
 
 
+NativeWindow *WmService::window(HWND hwnd) {
+    auto wnd = _nativeWindows.value(hwnd);
+    if (!wnd) {
+        wnd = new NativeWindow{hwnd};
+        _nativeWindows[hwnd] = wnd;
+
+//        if (wnd->canAddToTaskbar())
+//            list(wnd);
+    }
+    return wnd;
+}
+
+
+void WmService::destroyWindow(HWND hwnd) {
+    auto wnd = _nativeWindows.take(hwnd);
+
+    if (wnd && wnd->listed())
+        unlist(wnd);
+
+    if (_activeWindow == wnd)
+        _activeWindow = nullptr;
+
+    delete wnd;
+}
+
+void WmService::list(NativeWindow *wnd) {
+    qDebug() << wnd;
+    Q_ASSERT(!wnd->listed());
+
+    auto index = _listedWindows.size();
+    beginInsertRows({}, index, index);
+    _listedWindows.push_back(wnd);
+    endInsertRows();
+
+    wnd->setListed(true);
+}
+
+void WmService::unlist(NativeWindow *wnd) {
+    qDebug() << wnd;
+    Q_ASSERT(wnd->listed());
+
+    auto index = std::distance(_listedWindows.begin(), std::find(_listedWindows.begin(), _listedWindows.end(), wnd));
+    if (index >= _listedWindows.size()) {
+        qWarning() << "not found in list:" << wnd;
+        return;
+    }
+
+    beginRemoveRows({}, index, index);
+    _listedWindows.remove(index);
+    endRemoveRows();
+
+    wnd->setListed(false);
+}
+
+
 void WmService::enumerateWindows() {
     qDebug();
-    Q_ASSERT(_windowList.size() == 0);
+    Q_ASSERT(_listedWindows.size() == 0);
 
     struct WindowList {
-        QVector<NativeWindow *> windowList;
-        QHash<HWND, int> hwndIndex;
+        QVector<NativeWindow *> listedWindows;
+        QHash<HWND, NativeWindow *> nativeWindows;
     };
 
     WindowList windows;
@@ -328,24 +368,23 @@ void WmService::enumerateWindows() {
     EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
         auto *data = reinterpret_cast<WindowList *>(lParam);
         auto wnd = new NativeWindow{hwnd};
-        if (wnd->canAddToTaskbar()) {
-            qDebug() << data->windowList.size() << hwnd << wnd->title();
-            data->hwndIndex.insert(hwnd, data->windowList.size());
-            data->windowList.push_back(wnd);
-        } else {
-            delete wnd;
-            data->hwndIndex.insert(hwnd, -1);
+        data->nativeWindows[hwnd] = wnd;
+
+        if (wnd->canAddToTaskbar() && !wnd->cloaked()) {
+            qDebug() << data->listedWindows.size() << hwnd << wnd->title();
+            wnd->setListed(true);
+            data->listedWindows.push_back(wnd);
         }
         return true;
     }, LPARAM(&windows));
 
-    beginInsertRows({}, 0, windows.windowList.size() - 1);
-    _windowList = std::move(windows.windowList);
-    _hwndIndex = std::move(windows.hwndIndex);
+    beginInsertRows({}, 0, windows.listedWindows.size() - 1);
+    _listedWindows = std::move(windows.listedWindows);
+    _nativeWindows = std::move(windows.nativeWindows);
     endInsertRows();
 
     auto foreground = GetForegroundWindow();
-    foreach (auto window, _windowList) {
+    foreach (auto window, _listedWindows) {
         if (window->hwnd() == foreground) {
             window->setActive(true);
             _activeWindow = window;
@@ -353,3 +392,4 @@ void WmService::enumerateWindows() {
         }
     }
 }
+
