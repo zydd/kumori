@@ -10,6 +10,7 @@
 
 #include <Windows.h>
 #include <CommCtrl.h>
+#include <shellapi.h>
 
 #include "liveicon.h"
 
@@ -150,15 +151,15 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
     switch (msg) {
     case WM_COPYDATA: {
         if (lParam == 0) {
-            qDebug() << "null WM_COPYDATA";
+            qWarning() << "null WM_COPYDATA";
             break;
         }
 
         auto copyData = reinterpret_cast<PCOPYDATASTRUCT>(lParam);
 
         switch (copyData->dwData) {
-        case 0: {
-//            qDebug() << "AppBar message";
+        case NIM_ADD: {
+            qDebug() << "ADD";
             // AppBar message
             if (sizeof(APPBARMSGDATA_ext) == copyData->cbData) {
                 auto *amd = reinterpret_cast<APPBARMSGDATA_ext *>(copyData->lpData);
@@ -172,8 +173,9 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
             }
             break;
         }
-        case 1: {
+        case NIM_MODIFY: {
             auto trayData = reinterpret_cast<SHELLTRAYDATA *>(copyData->lpData);
+            qDebug() << "MODIFY" << trayData->nid.hWnd;
 
             auto itr = ::trayService->d->iconData.find(trayData->nid.hWnd);
             if (itr == ::trayService->d->iconData.end()) {
@@ -193,12 +195,21 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
 
             break;
         }
-        case 3: {
+
+        case NIM_DELETE:
+            qDebug() << "DELETE";
+            break;
+
+        case NIM_SETFOCUS: {
             auto notifyData = reinterpret_cast<WINNOTIFYICONIDENTIFIER *>(copyData->lpData);
-            qDebug() << "notify" << notifyData->hWnd << notifyData->cbSize;
+            qDebug() << "SETFOCUS" << notifyData->hWnd << notifyData->cbSize;
 
             break;
         }
+
+        case NIM_SETVERSION:
+            qDebug() << "SETVERSION";
+            break;
         }
 
         break;
