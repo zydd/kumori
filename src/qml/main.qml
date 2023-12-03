@@ -5,10 +5,8 @@ import QtQuick.Window 2.15
 import kumori 0.1
 
 
-ApplicationWindow {
+Taskbar {
     id: tbar
-    visible: true
-
     onClosing: Qt.quit()
 }
 

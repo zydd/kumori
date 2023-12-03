@@ -5,3 +5,4 @@ Launcher        0.1 Launcher.qml
 ContrastFilter  0.1 ContrastFilter.qml
 BlendEq         0.1 BlendEq.qml
 Ducks           0.1 Ducks.qml
+Taskbar         0.1 Taskbar.qml
