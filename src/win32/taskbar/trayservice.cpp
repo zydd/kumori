@@ -12,7 +12,7 @@
 #include <CommCtrl.h>
 #include <shellapi.h>
 
-#include "liveicon.h"
+#include "trayicon.h"
 
 
 using TrayServicePrivate = TrayService::TrayServicePrivate;
@@ -28,7 +28,7 @@ struct TrayService::TrayServicePrivate {
 
     APPBARDATA trayPos;
 
-    std::unordered_map<HWND, LiveIcon *> iconData;
+    std::unordered_map<HWND, TrayIcon *> iconData;
 
     ushort registerWindowClass(LPCWSTR name);
     HWND registerNotifyWindow();
@@ -130,7 +130,8 @@ QObjectList TrayService::trayItems() {
     QObjectList ret;
 
     for (auto itr = d->iconData.begin(); itr != d->iconData.end(); ++itr) {
-        ret.push_back(itr->second);
+        if (itr->second->data.hWnd)
+            ret.push_back(itr->second);
     }
 
     return ret;
@@ -179,19 +180,27 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
 
             auto itr = ::trayService->d->iconData.find(trayData->nid.hWnd);
             if (itr == ::trayService->d->iconData.end()) {
-                itr = ::trayService->d->iconData.insert({trayData->nid.hWnd, new LiveIcon()}).first;
+                itr = ::trayService->d->iconData.insert({trayData->nid.hWnd, new TrayIcon()}).first;
 
                 qDebug() << "add icon:" << QString::fromWCharArray(trayData->nid.szTip);
 
                 emit ::trayService->trayItemsChanged();
             }
 
-            itr->second->setTooltip(QString::fromWCharArray(trayData->nid.szTip));
+            auto& trayIcon = itr->second;
 
-            if (trayData->nid.hIcon)
+            trayIcon->data.hWnd      = trayData->nid.hWnd;
+            trayIcon->data.uID       = trayData->nid.uID;
+            trayIcon->data.uVersion  = trayData->nid.uVersion;
+
+            if (trayData->nid.uFlags & NIF_MESSAGE)
+                trayIcon->data.uCallbackMessage  = trayData->nid.uCallbackMessage;
+
+            if (trayData->nid.uFlags & NIF_TIP)
+                itr->second->setTooltip(QString::fromWCharArray(trayData->nid.szTip));
+
+            if (trayData->nid.uFlags & NIF_ICON && trayData->nid.hIcon)
                 itr->second->setIcon(QtWin::fromHICON(trayData->nid.hIcon));
-            else
-                emit itr->second->iconChanged();
 
             break;
         }

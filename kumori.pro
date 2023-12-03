@@ -27,6 +27,7 @@ SOURCES += \
     src/win32/shelliconprovider.cpp \
     src/win32/taskbar/liveicon.cpp \
     src/win32/taskbar/nativewindow.cpp \
+    src/win32/taskbar/trayicon.cpp \
     src/win32/taskbar/trayservice.cpp \
     src/win32/taskbar/wmservice.cpp \
     src/win32/winsearch.cpp
@@ -41,6 +42,7 @@ HEADERS += \
     src/win32/shelliconprovider.h \
     src/win32/taskbar/liveicon.h \
     src/win32/taskbar/nativewindow.h \
+    src/win32/taskbar/trayicon.h \
     src/win32/taskbar/trayservice.h \
     src/win32/taskbar/wmservice.h \
     src/win32/winsearch.h
