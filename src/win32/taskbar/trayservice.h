@@ -26,6 +26,8 @@ private:
 
     TrayServicePrivate *d;
 
+    void taskBarCreated();
+
 signals:
     void trayItemsChanged();
 

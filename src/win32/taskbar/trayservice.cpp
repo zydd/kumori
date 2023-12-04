@@ -5,6 +5,7 @@
 #include <qdebug.h>
 #include <qpixmap.h>
 #include <qscreen.h>
+#include <qtimer.h>
 #include <qwindow.h>
 #include <qwinfunctions.h>
 
@@ -28,7 +29,11 @@ struct TrayService::TrayServicePrivate {
 
     APPBARDATA trayPos;
 
+    QRect rect;
+
     std::unordered_map<HWND, TrayIcon *> iconData;
+
+    TrayIcon *icon(HWND hwnd);
 
     ushort registerWindowClass(LPCWSTR name);
     HWND registerNotifyWindow();
@@ -96,13 +101,6 @@ void TrayService::init() {
     d->registerTrayWindow();
     d->registerNotifyWindow();
 
-    qDebug() << "broadcast TaskbarCreated";
-    int msg = RegisterWindowMessage(L"TaskbarCreated");
-    if (msg > 0)
-        SendNotifyMessage(HWND_BROADCAST, msg, NULL, NULL);
-    else
-        qWarning() << "could not create TaskbarCreated message";
-
     d->initialized = true;
     qDebug() << "done";
 }
@@ -113,6 +111,13 @@ TrayService::~TrayService() {
     d->destroyNotifyWindow();
     d->destroyTrayWindow();
     delete this->d;
+}
+
+void TrayService::taskBarCreated() {
+    qDebug();
+    int msg = RegisterWindowMessage(L"TaskbarCreated");
+    if (!msg || !SUCCEEDED(SendNotifyMessage(HWND_BROADCAST, msg, NULL, NULL)))
+        qWarning() << "could not send TaskbarCreated message";
 }
 
 QObject *TrayService::instance(QQmlEngine *, QJSEngine *) {
@@ -130,7 +135,7 @@ QObjectList TrayService::trayItems() {
     QObjectList ret;
 
     for (auto itr = d->iconData.begin(); itr != d->iconData.end(); ++itr) {
-        if (itr->second->data.hWnd)
+        if (intptr_t(itr->second->data.hWnd) > 0x10)  // FIXME: are these GUID-based icons?
             ret.push_back(itr->second);
     }
 
@@ -157,37 +162,19 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
         }
 
         auto copyData = reinterpret_cast<PCOPYDATASTRUCT>(lParam);
+        auto trayData = reinterpret_cast<SHELLTRAYDATA *>(copyData->lpData);
 
         switch (copyData->dwData) {
-        case NIM_ADD: {
-            qDebug() << "ADD";
-            // AppBar message
-            if (sizeof(APPBARMSGDATA_ext) == copyData->cbData) {
-                auto *amd = reinterpret_cast<APPBARMSGDATA_ext *>(copyData->lpData);
+        case NIM_ADD:
+            qDebug() << "ADD" << trayData->nid.hWnd;
+            goto case_nim_modify;
 
-                if (sizeof(APPBARDATA) != amd->abd.cbSize) {
-                    qWarning() << "unexpected size";
-                    break;
-                }
-            } else {
-//                qWarning() << "unexpected AppBar message size";
-            }
-            break;
-        }
         case NIM_MODIFY: {
-            auto trayData = reinterpret_cast<SHELLTRAYDATA *>(copyData->lpData);
             qDebug() << "MODIFY" << trayData->nid.hWnd;
 
-            auto itr = ::trayService->d->iconData.find(trayData->nid.hWnd);
-            if (itr == ::trayService->d->iconData.end()) {
-                itr = ::trayService->d->iconData.insert({trayData->nid.hWnd, new TrayIcon()}).first;
+case_nim_modify:
 
-                qDebug() << "add icon:" << QString::fromWCharArray(trayData->nid.szTip);
-
-                emit ::trayService->trayItemsChanged();
-            }
-
-            auto& trayIcon = itr->second;
+            auto trayIcon = ::trayService->d->icon(trayData->nid.hWnd);
 
             trayIcon->data.hWnd      = trayData->nid.hWnd;
             trayIcon->data.uID       = trayData->nid.uID;
@@ -197,10 +184,10 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
                 trayIcon->data.uCallbackMessage  = trayData->nid.uCallbackMessage;
 
             if (trayData->nid.uFlags & NIF_TIP)
-                itr->second->setTooltip(QString::fromWCharArray(trayData->nid.szTip));
+                trayIcon->setTooltip(QString::fromWCharArray(trayData->nid.szTip));
 
             if (trayData->nid.uFlags & NIF_ICON && trayData->nid.hIcon)
-                itr->second->setIcon(QtWin::fromHICON(trayData->nid.hIcon));
+                trayIcon->setIcon(QtWin::fromHICON(trayData->nid.hIcon));
 
             break;
         }
@@ -216,9 +203,16 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
             break;
         }
 
-        case NIM_SETVERSION:
-            qDebug() << "SETVERSION";
+        case NIM_SETVERSION: {
+            auto trayData = reinterpret_cast<SHELLTRAYDATA *>(copyData->lpData);
+            qDebug() << "SETVERSION" << trayData->nid.hWnd << "v:" << trayData->nid.uVersion;
+
+            auto trayIcon = ::trayService->d->icon(trayData->nid.hWnd);
+
+            trayIcon->data.uVersion = trayData->nid.uVersion;
+
             break;
+        }
         }
 
         break;
@@ -237,6 +231,19 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
         return ::trayService->d->forwardToSystemTray(hWnd, msg, wParam, lParam);
     else
         return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+
+TrayIcon *TrayServicePrivate::icon(HWND hwnd) {
+    auto itr = iconData.find(hwnd);
+    if (itr == iconData.end()) {
+        itr = iconData.insert({hwnd, new TrayIcon()}).first;
+
+        qDebug() << "add icon:" << hwnd;
+
+        emit ::trayService->trayItemsChanged();
+    }
+    return itr->second;
 }
 
 
@@ -270,10 +277,10 @@ HWND TrayServicePrivate::registerTrayWindow() {
         L"Shell_TrayWnd", // window class name
         L"", // window title
         WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, // window style
-        0, // x position
-        0, // y position
-        0, // width
-        0, // height
+        rect.x(), // x position
+        rect.y(), // y position
+        rect.width(), // width
+        rect.height(), // height
         NULL, // parent window handle
         NULL, // menu handle
         hInstance, // application instance handle
@@ -321,10 +328,10 @@ HWND TrayServicePrivate::registerNotifyWindow() {
         L"TrayNotifyWnd", // window class name
         NULL, // window title
         WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, // window style
-        0, // x position
-        0, // y position
-        0, // width
-        0, // height
+        rect.x(), // x position
+        rect.y(), // y position
+        rect.width(), // width
+        rect.height(), // height
         hwndTray, // parent window handle
         NULL, // menu handle
         hInstance, // application instance handle
@@ -345,10 +352,9 @@ HWND TrayServicePrivate::registerNotifyWindow() {
 
 void TrayService::setTaskBar(QWindow *window) {
     qDebug() << window << window->geometry();
+    d->rect = window->geometry();
 
     init();
-
-    window->setParent(nullptr);
 
     auto edge =
             window->y() > window->screen()->geometry().y()/2 ? ABE_BOTTOM :
@@ -388,6 +394,10 @@ void TrayService::setTaskBar(QWindow *window) {
     killTimer(d->timerId);
     d->timerId = startTimer(200);
 
+//    QTimer::singleShot(500, [this]{
+        taskBarCreated();
+//    });
+
 //    ShowWindow(d->hwndSystemTray, SW_HIDE);
 }
 
@@ -409,7 +419,10 @@ void TrayService::timerEvent(QTimerEvent */*event*/) {
         qDebug() << "hide explorer taskbar";
     }
 
-    SetWindowPos(d->hwndTray, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOSIZE);
+    SetWindowPos(d->hwndTray, HWND_TOPMOST,
+                 d->rect.x(), d->rect.y(),
+                 d->rect.width(), d->rect.height(),
+                 SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOSIZE);
 }
 
 
