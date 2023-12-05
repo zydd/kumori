@@ -101,6 +101,10 @@ void TrayService::init() {
     d->registerTrayWindow();
     d->registerNotifyWindow();
 
+//    QTimer::singleShot(500, [this]{
+        taskBarCreated();
+//    });
+
     d->initialized = true;
     qDebug() << "done";
 }
@@ -415,10 +419,6 @@ void TrayService::setTaskBar(QWindow *window) {
 
     killTimer(d->timerId);
     d->timerId = startTimer(200);
-
-//    QTimer::singleShot(500, [this]{
-        taskBarCreated();
-//    });
 
 //    ShowWindow(d->hwndSystemTray, SW_HIDE);
 }
