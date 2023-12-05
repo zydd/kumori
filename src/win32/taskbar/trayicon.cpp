@@ -42,12 +42,6 @@ void TrayIconPainter::mousePressEvent(QMouseEvent *event) {
 
     trayIcon()->forwardMouseEvent(WM_MOUSEMOVE, event->globalX(), event->globalY());
 
-    {
-        // Allow process to take focus so popups close when losing focus
-        DWORD procId = 0;
-        GetWindowThreadProcessId(trayIcon()->data.hWnd, &procId);
-        AllowSetForegroundWindow(procId);
-    }
 
     switch (event->button()) {
     case Qt::LeftButton:
@@ -73,8 +67,16 @@ void TrayIconPainter::mousePressEvent(QMouseEvent *event) {
 void TrayIconPainter::mouseReleaseEvent(QMouseEvent *event) {
     qDebug() << event;
 
+    {
+        // Allow process to take focus so popups close when losing focus
+        DWORD procId = 0;
+        GetWindowThreadProcessId(trayIcon()->data.hWnd, &procId);
+        AllowSetForegroundWindow(procId);
+    }
+
     switch (event->button()) {
     case Qt::LeftButton:
+//        trayIcon()->forwardMouseEvent(WM_LBUTTONDOWN, event->globalX(), event->globalY());
         trayIcon()->forwardMouseEvent(WM_LBUTTONUP, event->globalX(), event->globalY());
 
         if (trayIcon()->data.uVersion >= NOTIFYICON_VERSION)
@@ -83,6 +85,7 @@ void TrayIconPainter::mouseReleaseEvent(QMouseEvent *event) {
         break;
 
     case Qt::RightButton:
+//        trayIcon()->forwardMouseEvent(WM_RBUTTONDOWN, event->globalX(), event->globalY());
         trayIcon()->forwardMouseEvent(WM_RBUTTONUP, event->globalX(), event->globalY());
 
         if (trayIcon()->data.uVersion >= NOTIFYICON_VERSION)
@@ -91,6 +94,7 @@ void TrayIconPainter::mouseReleaseEvent(QMouseEvent *event) {
         break;
 
     case Qt::MiddleButton:
+//        trayIcon()->forwardMouseEvent(WM_MBUTTONDOWN, event->globalX(), event->globalY());
         trayIcon()->forwardMouseEvent(WM_MBUTTONUP, event->globalX(), event->globalY());
         break;
 

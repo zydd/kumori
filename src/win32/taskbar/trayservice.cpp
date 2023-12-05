@@ -178,7 +178,7 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
             case NIM_MODIFY: {
                 qDebug() << "MODIFY" << trayData->nid.hWnd;
 
-                if (::trayService->d->iconData.contains(trayData->nid.hWnd)) {
+                if (!::trayService->d->iconData.contains(trayData->nid.hWnd)) {
                     qWarning() << "trying to modify icon before add:" << trayData->nid.hWnd;
 //                    break;
                 }
@@ -410,6 +410,8 @@ void TrayService::setTaskBar(QWindow *window) {
         qDebug() << "set initial appbar pos";
         SHAppBarMessage(ABM_SETPOS, &d->trayPos);
     }
+
+//    timerEvent(nullptr);
 
     killTimer(d->timerId);
     d->timerId = startTimer(200);
