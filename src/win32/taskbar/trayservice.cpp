@@ -31,7 +31,7 @@ struct TrayService::TrayServicePrivate {
 
     QRect rect;
 
-    std::unordered_map<HWND, TrayIcon *> iconData;
+    QHash<HWND, TrayIcon *> iconData;
 
     TrayIcon *icon(HWND hwnd);
 
@@ -135,8 +135,8 @@ QObjectList TrayService::trayItems() {
     QObjectList ret;
 
     for (auto itr = d->iconData.begin(); itr != d->iconData.end(); ++itr) {
-        if (intptr_t(itr->second->data.hWnd) > 0x10)  // FIXME: are these GUID-based icons?
-            ret.push_back(itr->second);
+        if (intptr_t(itr.value()->data.hWnd) > 0)  // FIXME: are these GUID-based icons?
+            ret.push_back(itr.value());
     }
 
     return ret;
@@ -165,58 +165,78 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
         auto trayData = reinterpret_cast<SHELLTRAYDATA *>(copyData->lpData);
 
         switch (copyData->dwData) {
-        case NIM_ADD:
-            qDebug() << "ADD" << trayData->nid.hWnd;
-            goto case_nim_modify;
+        case 0: { // APPBAR
+            break;
+        }
 
-        case NIM_MODIFY: {
-            qDebug() << "MODIFY" << trayData->nid.hWnd;
+        case 1: { // TRAYDATA
+            switch (trayData->dwMessage) {
+            case NIM_ADD:
+                qDebug() << "ADD" << trayData->nid.hWnd;
+                goto case_nim_modify;
+
+            case NIM_MODIFY: {
+                qDebug() << "MODIFY" << trayData->nid.hWnd;
+
+                if (::trayService->d->iconData.contains(trayData->nid.hWnd)) {
+                    qWarning() << "trying to modify icon before add:" << trayData->nid.hWnd;
+//                    break;
+                }
 
 case_nim_modify:
 
-            auto trayIcon = ::trayService->d->icon(trayData->nid.hWnd);
+                auto trayIcon = ::trayService->d->icon(trayData->nid.hWnd);
 
-            trayIcon->data.hWnd      = trayData->nid.hWnd;
-            trayIcon->data.uID       = trayData->nid.uID;
-            trayIcon->data.uVersion  = trayData->nid.uVersion;
+                trayIcon->data.hWnd      = trayData->nid.hWnd;
+                trayIcon->data.uID       = trayData->nid.uID;
+                trayIcon->data.uVersion  = trayData->nid.uVersion;
 
-            if (trayData->nid.uFlags & NIF_MESSAGE)
-                trayIcon->data.uCallbackMessage  = trayData->nid.uCallbackMessage;
+                if (trayData->nid.uFlags & NIF_MESSAGE)
+                    trayIcon->data.uCallbackMessage = trayData->nid.uCallbackMessage;
 
-            if (trayData->nid.uFlags & NIF_TIP)
-                trayIcon->setTooltip(QString::fromWCharArray(trayData->nid.szTip));
+                if (trayData->nid.uFlags & NIF_TIP)
+                    trayIcon->setTooltip(QString::fromWCharArray(trayData->nid.szTip));
 
-            if (trayData->nid.uFlags & NIF_ICON && trayData->nid.hIcon)
-                trayIcon->setIcon(QtWin::fromHICON(trayData->nid.hIcon));
+                if (trayData->nid.uFlags & NIF_ICON && trayData->nid.hIcon)
+                    trayIcon->setIcon(QtWin::fromHICON(trayData->nid.hIcon));
 
-            break;
+                return 1;
+            }
+
+            case NIM_DELETE: {
+                qDebug() << "DELETE" << trayData->nid.hWnd;
+                ::trayService->d->iconData.remove(trayData->nid.hWnd);
+                emit ::trayService->trayItemsChanged();
+                break;
+            }
+
+            case NIM_SETFOCUS: {
+                auto notifyData = reinterpret_cast<WINNOTIFYICONIDENTIFIER *>(copyData->lpData);
+                qDebug() << "SETFOCUS" << notifyData->hWnd << notifyData->cbSize;
+
+                break;
+            }
+
+            case NIM_SETVERSION: {
+                qDebug() << "SETVERSION" << trayData->nid.hWnd << "v:" << trayData->nid.uVersion;
+
+                auto trayIcon = ::trayService->d->icon(trayData->nid.hWnd);
+
+                trayIcon->data.uVersion = trayData->nid.uVersion;
+
+                break;
+            }
+            }
+            break;  // TRAYDATA
         }
 
-        case NIM_DELETE:
-            qDebug() << "DELETE";
-            break;
-
-        case NIM_SETFOCUS: {
-            auto notifyData = reinterpret_cast<WINNOTIFYICONIDENTIFIER *>(copyData->lpData);
-            qDebug() << "SETFOCUS" << notifyData->hWnd << notifyData->cbSize;
-
-            break;
-        }
-
-        case NIM_SETVERSION: {
-            auto trayData = reinterpret_cast<SHELLTRAYDATA *>(copyData->lpData);
-            qDebug() << "SETVERSION" << trayData->nid.hWnd << "v:" << trayData->nid.uVersion;
-
-            auto trayIcon = ::trayService->d->icon(trayData->nid.hWnd);
-
-            trayIcon->data.uVersion = trayData->nid.uVersion;
-
+        case 3: {  // NOTIFYICON
             break;
         }
         }
-
-        break;
+        break; // WM_COPYDATA
     }
+
     case WM_USER_NEW_APPBAR:
         qDebug() << "new appbar";
         SHAppBarMessage(ABM_SETPOS, &trayService->d->trayPos);
@@ -237,13 +257,13 @@ case_nim_modify:
 TrayIcon *TrayServicePrivate::icon(HWND hwnd) {
     auto itr = iconData.find(hwnd);
     if (itr == iconData.end()) {
-        itr = iconData.insert({hwnd, new TrayIcon()}).first;
+        itr = iconData.insert(hwnd, new TrayIcon());
 
         qDebug() << "add icon:" << hwnd;
 
         emit ::trayService->trayItemsChanged();
     }
-    return itr->second;
+    return itr.value();
 }
 
 
