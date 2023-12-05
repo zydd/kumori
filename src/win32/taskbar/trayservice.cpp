@@ -209,7 +209,6 @@ case_nim_modify:
                 if (trayData->nid.uFlags & NIF_ICON && trayData->nid.hIcon)
                     trayIcon->setIcon(QtWin::fromHICON(trayData->nid.hIcon));
 
-                break;
                 return true;
             }
 
