@@ -3,7 +3,7 @@
 #include <Windows.h>
 
 
-void TrayIcon::setTooltip(QString tooltip) {
+void TrayIcon::setTooltip(QString const& tooltip) {
     qDebug() << data.hWnd << tooltip;
 
     if (_tooltip == tooltip)
@@ -24,6 +24,12 @@ void TrayIcon::forwardMouseEvent(unsigned event, unsigned x, unsigned y) {
 
     LPARAM lParam = MAKELPARAM(event, lParam_h);
 
+//    qDebug() << "********"
+//             << "hWnd"      << data.hWnd
+//             << "uCallbackMessage" << data.uCallbackMessage
+//             << "uID"       << data.uID
+//             << "uVersion"  << data.uVersion;
+
     qDebug() << data.hWnd << "v:" << data.uVersion << "wParam:" << (void *) wParam << "lParam:" << (void *) lParam;
 
     SendNotifyMessage(data.hWnd, data.uCallbackMessage, wParam, lParam);
@@ -33,7 +39,13 @@ void TrayIcon::forwardMouseEvent(unsigned event, unsigned x, unsigned y) {
 TrayIconPainter::TrayIconPainter(QQuickItem *parent)
     : LiveIconPainter{parent}
 {
+//    setAcceptHoverEvents(true);
     setAcceptedMouseButtons(Qt::LeftButton | Qt::RightButton | Qt::MiddleButton);
+
+    connect(this, &LiveIconPainter::liveIconChanged, [this]{
+        auto geometry = QRectF{position(), size()};
+        geometryChanged(geometry, geometry);
+    });
 }
 
 
@@ -42,6 +54,12 @@ void TrayIconPainter::mousePressEvent(QMouseEvent *event) {
 
     trayIcon()->forwardMouseEvent(WM_MOUSEMOVE, event->globalX(), event->globalY());
 
+    {
+        // Allow process to take focus so popups close when losing focus
+        DWORD procId = 0;
+        GetWindowThreadProcessId(trayIcon()->data.hWnd, &procId);
+        AllowSetForegroundWindow(procId);
+    }
 
     switch (event->button()) {
     case Qt::LeftButton:
@@ -66,13 +84,6 @@ void TrayIconPainter::mousePressEvent(QMouseEvent *event) {
 
 void TrayIconPainter::mouseReleaseEvent(QMouseEvent *event) {
     qDebug() << event;
-
-    {
-        // Allow process to take focus so popups close when losing focus
-        DWORD procId = 0;
-        GetWindowThreadProcessId(trayIcon()->data.hWnd, &procId);
-        AllowSetForegroundWindow(procId);
-    }
 
     switch (event->button()) {
     case Qt::LeftButton:
@@ -100,7 +111,7 @@ void TrayIconPainter::mouseReleaseEvent(QMouseEvent *event) {
 
     default:
         qWarning() << "unexpected event";
-        QQuickPaintedItem::mousePressEvent(event);
+        QQuickPaintedItem::mouseReleaseEvent(event);
         break;
     }
 }
@@ -121,7 +132,20 @@ void TrayIconPainter::mouseDoubleClickEvent(QMouseEvent *event) {
         break;
     default:
         qWarning() << "unexpected event";
-        QQuickPaintedItem::mousePressEvent(event);
+        QQuickPaintedItem::mouseDoubleClickEvent(event);
         break;
     }
 }
+
+void TrayIconPainter::geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry) {
+    if (trayIcon()) {
+        auto topLeft = mapToGlobal(newGeometry.topLeft());
+        trayIcon()->setRect(QRect(topLeft.toPoint(), newGeometry.size().toSize()));
+    }
+    LiveIconPainter::geometryChanged(newGeometry, oldGeometry);
+}
+
+//void TrayIconPainter::mouseMoveEvent(QMouseEvent *event) {
+//    qDebug() << event;
+//    QQuickPaintedItem::mouseMoveEvent(event);
+//}

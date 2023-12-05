@@ -11,8 +11,8 @@ ApplicationWindow {
     flags: Qt.FramelessWindowHint
 
     x: 0
-    y: 1200 - height
-    width: Screen.desktopAvailableWidth
+    y: Screen.height - height
+    width: Screen.width
     height: 36
 
     font.pointSize: 8

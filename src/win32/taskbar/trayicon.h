@@ -12,7 +12,9 @@ public:
     inline TrayIcon(): LiveIcon() { }
 
     inline QString tooltip() { return _tooltip; }
-    void setTooltip(QString tooltip);
+    inline QRect rect() { return _rect; }
+    void setRect(QRect const& rect) {  _rect = rect; }
+    void setTooltip(QString const& tooltip);
     void forwardMouseEvent(unsigned event, unsigned x, unsigned y);
 
     struct Data {
@@ -24,6 +26,7 @@ public:
 
 private:
     QString _tooltip;
+    QRect _rect;
 
 signals:
     void tooltipChanged();
@@ -42,5 +45,9 @@ protected:
     virtual void mousePressEvent(QMouseEvent *event) override;
     virtual void mouseReleaseEvent(QMouseEvent *event) override;
     virtual void mouseDoubleClickEvent(QMouseEvent *event) override;
+//    virtual void mouseMoveEvent(QMouseEvent *event) override;
+
+    // QQuickItem interface
+    virtual void geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry) override;
 };
 

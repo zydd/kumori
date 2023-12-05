@@ -14,7 +14,7 @@ public:
     void setIcon(QPixmap const& icon);
 
 private:
-    QPixmap _icon;
+    QPixmap _icon = {};
 
 signals:
     void iconChanged();
@@ -23,7 +23,7 @@ signals:
 
 class LiveIconPainter : public QQuickPaintedItem {
     Q_OBJECT
-    Q_PROPERTY(QObject *liveIcon READ liveIcon WRITE setLiveIconObject)
+    Q_PROPERTY(QObject *liveIcon READ liveIcon WRITE setLiveIconObject NOTIFY liveIconChanged)
 
 public:
     inline LiveIconPainter(QQuickItem *parent = nullptr) :
@@ -35,7 +35,10 @@ public:
     virtual void paint(QPainter *painter) override;
 
 private:
-    LiveIcon *_liveIcon;
+    LiveIcon *_liveIcon = nullptr;
+
+signals:
+    void liveIconChanged();
 };
 
 #endif // LIVEICON_H

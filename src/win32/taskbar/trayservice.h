@@ -7,12 +7,14 @@ class QWindow;
 class QQmlEngine;
 class QJSEngine;
 
+struct TrayServicePrivate;
+
 class TrayService : public QObject {
     Q_OBJECT
     Q_PROPERTY(QList<QObject *> trayItems READ trayItems NOTIFY trayItemsChanged)
+    friend struct TrayServicePrivate;
 
 public:
-    struct TrayServicePrivate;
     static QObject *instance(QQmlEngine *, QJSEngine *);
 
     Q_INVOKABLE void init();
