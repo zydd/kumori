@@ -32,6 +32,7 @@ struct TrayServicePrivate {
     QHash<HWND, TrayIcon *> iconData;
 
     TrayIcon *icon(HWND hwnd);
+    void removeIcon(HWND hwnd);
 
     ushort registerWindowClass(LPCWSTR name);
     HWND registerNotifyWindow();
@@ -217,8 +218,7 @@ case_nim_modify:
 //                if (!::trayService->d->iconData.contains(trayData->nid.hWnd))
 //                    return false;
 
-                ::trayService->d->iconData.remove(trayData->nid.hWnd);
-                emit ::trayService->trayItemsChanged();
+                ::trayService->d->removeIcon(trayData->nid.hWnd);
 
                 return true;
 
@@ -317,12 +317,20 @@ TrayIcon *TrayServicePrivate::icon(HWND hwnd) {
     auto itr = iconData.find(hwnd);
     if (itr == iconData.end()) {
         itr = iconData.insert(hwnd, new TrayIcon());
+        QObject::connect(itr.value(), &TrayIcon::invalidated, [this, hwnd]{ removeIcon(hwnd); });
 
         qDebug() << "add icon:" << hwnd;
 
         emit ::trayService->trayItemsChanged();
     }
     return itr.value();
+}
+
+
+void TrayServicePrivate::removeIcon(HWND hwnd) {
+    qDebug() << hwnd;
+    iconData.remove(hwnd);
+    emit ::trayService->trayItemsChanged();
 }
 
 

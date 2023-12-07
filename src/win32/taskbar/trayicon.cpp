@@ -36,6 +36,16 @@ void TrayIcon::forwardMouseEvent(unsigned event, unsigned x, unsigned y) {
 }
 
 
+bool TrayIcon::valid() {
+    bool valid = IsWindow(data.hWnd);
+    if (!valid) {
+        qDebug() << valid;
+        emit invalidated();
+    }
+    return valid;
+}
+
+
 TrayIconPainter::TrayIconPainter(QQuickItem *parent)
     : LiveIconPainter{parent}
 {
@@ -51,6 +61,8 @@ TrayIconPainter::TrayIconPainter(QQuickItem *parent)
 
 void TrayIconPainter::mousePressEvent(QMouseEvent *event) {
     qDebug() << event;
+
+    if (!trayIcon()->valid()) return;
 
     trayIcon()->forwardMouseEvent(WM_MOUSEMOVE, event->globalX(), event->globalY());
 

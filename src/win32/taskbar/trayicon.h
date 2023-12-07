@@ -16,6 +16,7 @@ public:
     void setRect(QRect const& rect) {  _rect = rect; }
     void setTooltip(QString const& tooltip);
     void forwardMouseEvent(unsigned event, unsigned x, unsigned y);
+    bool valid();
 
     struct Data {
         HWND hWnd;
@@ -30,6 +31,7 @@ private:
 
 signals:
     void tooltipChanged();
+    void invalidated();
 };
 
 
