@@ -25,6 +25,7 @@ SOURCES += \
     src/qmltypes/wallpaper.cpp \
     src/win32/ohm.cpp \
     src/win32/shelliconprovider.cpp \
+    src/win32/taskbar/appbarwindow.cpp \
     src/win32/taskbar/liveicon.cpp \
     src/win32/taskbar/nativewindow.cpp \
     src/win32/taskbar/trayicon.cpp \
@@ -40,6 +41,7 @@ HEADERS += \
     src/qmltypes/wallpaper.h \
     src/win32/ohm.h \
     src/win32/shelliconprovider.h \
+    src/win32/taskbar/appbarwindow.h \
     src/win32/taskbar/liveicon.h \
     src/win32/taskbar/nativewindow.h \
     src/win32/taskbar/trayicon.h \

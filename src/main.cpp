@@ -16,6 +16,7 @@
 #include "win32/ohm.h"
 #include "win32/shelliconprovider.h"
 #include "win32/taskbar/liveicon.h"
+#include "win32/taskbar/appbarwindow.h"
 #include "win32/taskbar/trayservice.h"
 #include "win32/taskbar/trayicon.h"
 #include "win32/taskbar/wmservice.h"
@@ -59,6 +60,7 @@ int main(int argc, char *argv[]) {
     qRegisterMetaType<LiveIcon *>();
     qmlRegisterType<LiveIconPainter>("kumori", 0, 1, "LiveIcon");
     qmlRegisterType<TrayIconPainter>("kumori", 0, 1, "TrayIcon");
+    qmlRegisterType<AppbarWindow>("kumori", 0, 1, "AppbarWindow");
 
     qmlRegisterSingletonType<TrayService>("kumori", 0, 1, "TrayService", &TrayService::instance);
     qmlRegisterSingletonType<WmService>("kumori", 0, 1, "WmService", &WmService::instance);
