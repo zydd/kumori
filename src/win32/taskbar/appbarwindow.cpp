@@ -102,8 +102,10 @@ void AppbarWindow::updateGeometry() {
     qDebug() << _edge << _thickness;
     QRect rect = {};
 
-    auto const screenRect = screen()->geometry(); //.adjusted(0, 0, 0, 0);
+    auto const screenRect = screen()->geometry();
+    auto const availableRect = screen()->availableGeometry();
     qDebug() << "screen rect:" << screenRect;
+    qDebug() << "available:" << availableRect;
 
     switch (_edge) {
     case Qt::TopEdge:
@@ -113,7 +115,7 @@ void AppbarWindow::updateGeometry() {
 
     case Qt::LeftEdge:
     case Qt::RightEdge:
-        rect.setSize({_thickness, screenRect.height()});
+        rect.setSize({_thickness, availableRect.height()});
         break;
 
     default:
