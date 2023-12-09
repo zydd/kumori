@@ -77,7 +77,7 @@ AppbarWindow {
             Layout.preferredWidth: contentWidth
             orientation: ListView.Horizontal
             layoutDirection: Qt.RightToLeft
-            model: TrayService.trayItems
+            model: TrayService
             clip: true
             Layout.leftMargin: 5
 
@@ -95,7 +95,7 @@ AppbarWindow {
                 contentItem:
                     TrayIcon {
                         anchors.centerIn: parent
-                        liveIcon: modelData
+                        liveIcon: model.trayIcon
                         width: 24
                         height: 24
                     }

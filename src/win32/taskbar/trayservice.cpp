@@ -27,11 +27,6 @@ struct TrayServicePrivate {
 
     APPBARDATA systemTrayState;
 
-    QHash<HWND, TrayIcon *> iconData;
-
-    TrayIcon *icon(HWND hwnd);
-    void removeIcon(HWND hwnd);
-
     ushort registerWindowClass(LPCWSTR name);
     HWND registerNotifyWindow();
     HWND registerTrayWindow();
@@ -75,7 +70,7 @@ struct WINNOTIFYICONIDENTIFIER {
 
 
 TrayService::TrayService(QObject *parent)
-    : QObject{parent}
+    : QAbstractItemModel{parent}
 {
     qDebug();
     d = new TrayServicePrivate();
@@ -138,6 +133,40 @@ void TrayService::timerEvent(QTimerEvent */*event*/) {
                  SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOSIZE);
 }
 
+QModelIndex TrayService::index(int row, int column, const QModelIndex &/*parent*/) const {
+    return createIndex(row, column);
+}
+
+QModelIndex TrayService::parent(const QModelIndex &child) const { return {}; }
+int TrayService::columnCount(const QModelIndex &parent) const { return 1; }
+
+int TrayService::rowCount(const QModelIndex &parent) const {
+    return _iconData.count();
+}
+
+
+QVariant TrayService::data(const QModelIndex &index, int role) const {
+    Q_ASSERT(index.row() < _trayIcons.size());
+
+    switch (role) {
+    case IdRole:
+        return intptr_t(_trayIcons[index.row()]->data.hWnd);
+    case TrayIconRole:
+        return QVariant::fromValue(_trayIcons[index.row()]);
+    }
+
+    Q_ASSERT(false);
+    return {};
+}
+
+QHash<int, QByteArray> TrayService::roleNames() const {
+    static const QHash<int, QByteArray> roles = {
+        {ModelRoles::IdRole, "id"},
+        {ModelRoles::TrayIconRole, "trayIcon"},
+    };
+    return roles;
+}
+
 
 void TrayService::taskBarCreated() {
     qDebug();
@@ -155,17 +184,6 @@ QObject *TrayService::instance(QQmlEngine *, QJSEngine *) {
     }
 
     return ::trayService;
-}
-
-QObjectList TrayService::trayItems() {
-    QObjectList ret;
-
-    for (auto itr = d->iconData.begin(); itr != d->iconData.end(); ++itr) {
-        if (intptr_t(itr.value()->data.hWnd) > 0)  // FIXME: are these GUID-based icons?
-            ret.push_back(itr.value());
-    }
-
-    return ret;
 }
 
 
@@ -209,14 +227,14 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
             case NIM_MODIFY: {
 //                qDebug() << "MODIFY" << trayData->nid.hWnd;
 
-                if (!::trayService->d->iconData.contains(trayData->nid.hWnd)) {
+                if (!::trayService->_iconData.contains(trayData->nid.hWnd)) {
                     qWarning() << "trying to modify icon before add:" << trayData->nid.hWnd;
 //                    return false;
                 }
 
 case_nim_modify:
 
-                auto trayIcon = ::trayService->d->icon(trayData->nid.hWnd);
+                auto trayIcon = ::trayService->icon(trayData->nid.hWnd);
 
                 trayIcon->data.hWnd      = trayData->nid.hWnd;
                 trayIcon->data.uID       = trayData->nid.uID;
@@ -240,10 +258,10 @@ case_nim_modify:
 
             case NIM_DELETE: {
                 qDebug() << "DELETE" << trayData->nid.hWnd;
-//                if (!::trayService->d->iconData.contains(trayData->nid.hWnd))
+//                if (!::trayService->_iconData.contains(trayData->nid.hWnd))
 //                    return false;
 
-                ::trayService->d->removeIcon(trayData->nid.hWnd);
+                ::trayService->removeIcon(trayData->nid.hWnd);
 
                 return true;
 
@@ -257,7 +275,7 @@ case_nim_modify:
 
             case NIM_SETVERSION: {
                 qDebug() << "SETVERSION" << trayData->nid.hWnd << "v:" << trayData->nid.uVersion;
-                auto trayIcon = ::trayService->d->iconData.value(trayData->nid.hWnd, nullptr);
+                auto trayIcon = ::trayService->_iconData.value(trayData->nid.hWnd, nullptr);
                 if (!trayIcon)
                     return false;
 
@@ -277,7 +295,7 @@ case_nim_modify:
             qDebug() << "WINNOTIFYICON" << notifyIcon->hWnd;
 
 
-            auto trayIcon = ::trayService->d->iconData.value(notifyIcon->hWnd, nullptr);
+            auto trayIcon = ::trayService->_iconData.value(notifyIcon->hWnd, nullptr);
             if (!trayIcon) {
                 qWarning() << "TrayIcon not found" << notifyIcon->hWnd;
                 return false;
@@ -312,24 +330,41 @@ case_nim_modify:
 }
 
 
-TrayIcon *TrayServicePrivate::icon(HWND hwnd) {
-    auto itr = iconData.find(hwnd);
-    if (itr == iconData.end()) {
-        itr = iconData.insert(hwnd, new TrayIcon());
+TrayIcon *TrayService::icon(HWND hwnd) {
+    auto itr = _iconData.find(hwnd);
+    if (itr == _iconData.end()) {
+        itr = _iconData.insert(hwnd, new TrayIcon());
         QObject::connect(itr.value(), &TrayIcon::invalidated, [this, hwnd]{ removeIcon(hwnd); });
 
         qDebug() << "add icon:" << hwnd;
 
-        emit ::trayService->trayItemsChanged();
+        auto index = _trayIcons.size();
+        beginInsertRows({}, index, index);
+        _trayIcons.push_back(itr.value());
+        endInsertRows();
     }
     return itr.value();
 }
 
 
-void TrayServicePrivate::removeIcon(HWND hwnd) {
+void TrayService::removeIcon(HWND hwnd) {
     qDebug() << hwnd;
-    iconData.remove(hwnd);
-    emit ::trayService->trayItemsChanged();
+
+    auto icon = _iconData.take(hwnd);
+    if (!icon)
+        return;
+
+    auto index = std::distance(_trayIcons.begin(), std::find(_trayIcons.begin(), _trayIcons.end(), icon));
+    if (index >= _trayIcons.size()) {
+        qWarning() << "not found in list:" << hwnd;
+        return;
+    }
+
+    beginRemoveRows({}, index, index);
+    _trayIcons.remove(index);
+    endRemoveRows();
+
+    delete icon;
 }
 
 

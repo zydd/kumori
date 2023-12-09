@@ -48,9 +48,6 @@ WmService::WmService(QObject *parent)
 {
     qDebug();
     d = new WmServicePrivate();
-
-    _roleNames[Roles::IdRole] = "id";
-    _roleNames[Roles::NativeWindowRole] = "nativeWindow";
 }
 
 
@@ -61,28 +58,24 @@ WmService::~WmService() {
     delete this->d;
 }
 
-QModelIndex WmService::index(int row, int column, const QModelIndex &parent) const {
+QModelIndex WmService::index(int row, int column, const QModelIndex &/*parent*/) const {
     return createIndex(row, column);
 }
 
-QModelIndex WmService::parent(const QModelIndex &child) const {
-    return {};
-}
+QModelIndex WmService::parent(const QModelIndex &child) const { return {}; }
+int WmService::columnCount(const QModelIndex &parent) const { return 1; }
 
 int WmService::rowCount(const QModelIndex &parent) const {
     return _listedWindows.size();
 }
 
-int WmService::columnCount(const QModelIndex &parent) const {
-    return 1;
-}
 
 QVariant WmService::data(const QModelIndex &index, int role) const {
     Q_ASSERT(index.row() < _listedWindows.size());
 
     switch (role) {
     case IdRole:
-        return 0;
+        return intptr_t(_listedWindows[index.row()]->hwnd());
     case NativeWindowRole:
         return QVariant::fromValue(_listedWindows[index.row()]);
     }
@@ -91,8 +84,13 @@ QVariant WmService::data(const QModelIndex &index, int role) const {
     return {};
 }
 
+
 QHash<int, QByteArray> WmService::roleNames() const {
-    return _roleNames;
+    static const QHash<int, QByteArray> roles = {
+        {ModelRoles::IdRole, "id"},
+        {ModelRoles::NativeWindowRole, "nativeWindow"},
+    };
+    return roles;
 }
 
 

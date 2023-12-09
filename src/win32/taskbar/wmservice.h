@@ -19,7 +19,7 @@ public:
     Q_INVOKABLE void init();
 
 private:
-    enum Roles {
+    enum ModelRoles {
         IdRole = Qt::UserRole + 1,
         NativeWindowRole,
     };
@@ -28,7 +28,6 @@ private:
     ~WmService();
 
     WmServicePrivate *d = nullptr;
-    QHash<int, QByteArray> _roleNames;
     QVector<NativeWindow *> _listedWindows;
     QHash<HWND, NativeWindow *> _nativeWindows;
     NativeWindow *_activeWindow = nullptr;
@@ -43,8 +42,8 @@ private:
 signals:
 
 
-    // QAbstractItemModel interface
 public:
+    // QAbstractItemModel interface
     QModelIndex index(int row, int column, const QModelIndex &parent) const override;
     QModelIndex parent(const QModelIndex &child) const override;
     int rowCount(const QModelIndex &parent) const override;
