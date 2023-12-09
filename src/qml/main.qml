@@ -6,7 +6,6 @@ import kumori 0.1
 
 
 Taskbar {
-    id: tbar
-    onClosing: Qt.quit()
+
 }
 
