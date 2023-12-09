@@ -25,9 +25,7 @@ struct TrayServicePrivate {
     HWND hwndNotify;
     HWND hwndSystemTray;
 
-    APPBARDATA trayPos;
-
-    QRect rect;
+    APPBARDATA systemTrayState;
 
     QHash<HWND, TrayIcon *> iconData;
 
@@ -96,17 +94,27 @@ void TrayService::init() {
 
     // TODO: check if there are multiple instances of Shell_TrayWnd and fail
     d->hwndSystemTray = FindWindow(L"Shell_TrayWnd", NULL);
+    {
+        d->systemTrayState.cbSize = sizeof(APPBARDATA);
+        d->systemTrayState.lParam = ABS_AUTOHIDE;
+        d->systemTrayState.hWnd = d->hwndSystemTray;
+        SHAppBarMessage(ABM_SETSTATE, &d->systemTrayState);
+    }
 
     d->registerTrayWindow();
     d->registerNotifyWindow();
 
-//    QTimer::singleShot(500, [this]{
+    killTimer(d->timerId);
+    d->timerId = startTimer(200);
+
+    QTimer::singleShot(2000, [this]{
         taskBarCreated();
-//    });
+    });
 
     d->initialized = true;
     qDebug() << "done";
 }
+
 
 TrayService::~TrayService() {
     qDebug();
@@ -115,6 +123,21 @@ TrayService::~TrayService() {
     d->destroyTrayWindow();
     delete this->d;
 }
+
+
+void TrayService::timerEvent(QTimerEvent */*event*/) {
+    if (IsWindowVisible(d->hwndSystemTray)) {
+        qDebug() << "hide explorer taskbar";
+        SHAppBarMessage(ABM_SETSTATE, &d->systemTrayState);
+        ShowWindow(d->hwndSystemTray, SW_HIDE);
+    }
+
+    SetWindowPos(d->hwndTray,
+                 HWND_TOPMOST,
+                 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOSIZE);
+}
+
 
 void TrayService::taskBarCreated() {
     qDebug();
@@ -154,8 +177,6 @@ LRESULT TrayServicePrivate::forwardToSystemTray(HWND hWnd, UINT msg, WPARAM wPar
         return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-#define WM_USER_NEW_APPBAR (WM_USER + 110011)
-
 
 LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 //    void* data = GetWindowLongPtr(hWnd, GWLP_USERDATA);
@@ -186,7 +207,7 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
                 goto case_nim_modify;
 
             case NIM_MODIFY: {
-                qDebug() << "MODIFY" << trayData->nid.hWnd;
+//                qDebug() << "MODIFY" << trayData->nid.hWnd;
 
                 if (!::trayService->d->iconData.contains(trayData->nid.hWnd)) {
                     qWarning() << "trying to modify icon before add:" << trayData->nid.hWnd;
@@ -209,6 +230,10 @@ case_nim_modify:
 
                 if (trayData->nid.uFlags & NIF_ICON && trayData->nid.hIcon)
                     trayIcon->setIcon(QtWin::fromHICON(trayData->nid.hIcon));
+
+                if (trayData->dwMessage == NIM_ADD) {
+                    qDebug() << "added" << trayIcon->data.hWnd << trayIcon->tooltip();
+                }
 
                 return true;
             }
@@ -274,32 +299,6 @@ case_nim_modify:
         }
         break; // WM_COPYDATA
     }
-
-    case WM_USER_NEW_APPBAR:
-        switch (wParam) {
-        case ABN_STATECHANGE:
-            qDebug() << "ABN_STATECHANGE" << lParam;
-            break;
-
-        case ABN_POSCHANGED:
-            qDebug() << "ABN_POSCHANGED" << lParam;
-            SHAppBarMessage(ABM_SETPOS, &trayService->d->trayPos);
-            break;
-
-        case ABN_FULLSCREENAPP:  // lParam == true -> full screen window opening
-            qDebug() << "ABN_FULLSCREENAPP" << lParam;
-            break;
-
-        case ABN_WINDOWARRANGE:  // lParam == true -> hide
-            qDebug() << "ABN_WINDOWARRANGE" << lParam;
-            break;
-
-        default:
-            qWarning() << "ABN_UNKNOWN";
-            break;
-        }
-
-        return 0;
     }
 
     if  (  msg == WM_COPYDATA
@@ -364,10 +363,10 @@ HWND TrayServicePrivate::registerTrayWindow() {
         L"Shell_TrayWnd", // window class name
         L"", // window title
         WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, // window style
-        rect.x(), // x position
-        rect.y(), // y position
-        rect.width(), // width
-        rect.height(), // height
+        0, // x position
+        0, // y position
+        0, // width
+        0, // height
         NULL, // parent window handle
         NULL, // menu handle
         hInstance, // application instance handle
@@ -415,10 +414,10 @@ HWND TrayServicePrivate::registerNotifyWindow() {
         L"TrayNotifyWnd", // window class name
         NULL, // window title
         WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, // window style
-        rect.x(), // x position
-        rect.y(), // y position
-        rect.width(), // width
-        rect.height(), // height
+        0, // x position
+        0, // y position
+        0, // width
+        0, // height
         hwndTray, // parent window handle
         NULL, // menu handle
         hInstance, // application instance handle
@@ -434,82 +433,6 @@ HWND TrayServicePrivate::registerNotifyWindow() {
     }
 
     return hwndNotify;
-}
-
-
-void TrayService::setTaskBar(QWindow *window) {
-    qDebug() << window << window->geometry();
-    d->rect = window->geometry();
-
-    window->setParent(nullptr);
-
-    init();
-
-    auto edge =
-            window->y() > window->screen()->geometry().y()/2 ? ABE_BOTTOM :
-            window->x() > window->screen()->geometry().x()/2 ? ABE_RIGHT :
-            window->x() > 0 || window->height() > window->width() ? ABE_LEFT :
-                                                                    ABE_TOP;
-    {
-        APPBARDATA abd;
-        abd.cbSize = sizeof(APPBARDATA);
-        abd.hWnd = d->hwndTray;
-        abd.uEdge = edge;
-        abd.uCallbackMessage = WM_USER_NEW_APPBAR;
-        SHAppBarMessage(ABM_NEW, &abd);
-    }
-
-    {
-        APPBARDATA abd;
-        abd.cbSize = sizeof(APPBARDATA);
-        abd.lParam = ABS_AUTOHIDE;
-        abd.hWnd = d->hwndSystemTray;
-        SHAppBarMessage(ABM_SETSTATE, &abd);
-    }
-
-    {
-        d->trayPos = {};
-        d->trayPos.cbSize = sizeof(APPBARDATA);
-        d->trayPos.hWnd = d->hwndTray;
-        d->trayPos.uEdge = edge;
-        d->trayPos.rc.top = window->y();
-        d->trayPos.rc.bottom = window->y() + window->height();
-        d->trayPos.rc.left = window->x();
-        d->trayPos.rc.right = window->x() + window->width();
-        qDebug() << "set initial appbar pos";
-        SHAppBarMessage(ABM_SETPOS, &d->trayPos);
-    }
-
-//    timerEvent(nullptr);
-
-    killTimer(d->timerId);
-    d->timerId = startTimer(200);
-
-//    ShowWindow(d->hwndSystemTray, SW_HIDE);
-}
-
-
-void TrayService::timerEvent(QTimerEvent */*event*/) {
-    if (IsWindowVisible(d->hwndSystemTray)) {
-        qDebug() << "hide explorer taskbar";
-        static APPBARDATA abd = []{  // FIXME: move this object to *d
-            APPBARDATA abd;
-            abd.cbSize = sizeof(APPBARDATA);
-            abd.lParam = ABS_AUTOHIDE;
-            return abd;
-        }();
-        abd.hWnd = d->hwndSystemTray;
-        SHAppBarMessage(ABM_SETSTATE, &abd);
-//        SHAppBarMessage(ABM_SETPOS, &d->trayPos);
-
-//        SetWindowPos(d->hwndSystemTray, HWND_BOTTOM, 0, 0, 0, 0, SWP_HIDEWINDOW | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-        ShowWindow(d->hwndSystemTray, SW_HIDE);
-    }
-
-    SetWindowPos(d->hwndTray, HWND_TOPMOST,
-                 d->rect.x(), d->rect.y(),
-                 d->rect.width(), d->rect.height(),
-                 SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOSIZE);
 }
 
 

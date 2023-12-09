@@ -5,29 +5,15 @@ import QtQuick.Window 2.15
 import kumori 0.1
 
 
-ApplicationWindow {
+AppbarWindow {
     id: root
     color: 'transparent'
-    flags: Qt.FramelessWindowHint
+    thickness: 36
 
-    x: 0
-    y: Screen.height - height
-    width: Screen.width
-    height: 36
-
-    font.pointSize: 8
-    palette.button: 'transparent'
-
-    Timer {
-        running: true
-        interval: 100
-        onTriggered: {
-            TrayService.setTaskBar(root)
-            WmService.init()
-            root.visible = true
-        }
-
-        Component.onDestruction: TrayService.restoreSystemTaskbar()
+    Component.onCompleted: {
+        TrayService.init()
+        WmService.init()
+        root.show()
     }
 
     Rectangle {
@@ -93,11 +79,13 @@ ApplicationWindow {
             layoutDirection: Qt.RightToLeft
             model: TrayService.trayItems
             clip: true
+            Layout.leftMargin: 5
 
             delegate: ToolButton {
                 width: trayView.height
                 height: trayView.height
 //                hoverEnabled: true
+                palette.button: 'transparent'
 
 //                ToolTip.delay: 1000
 //                ToolTip.timeout: 5000
@@ -148,4 +136,5 @@ ApplicationWindow {
             interval = 60 * 1000 - (date.getSeconds() * 1000 + date.getMilliseconds())
         }
     }
+
 }

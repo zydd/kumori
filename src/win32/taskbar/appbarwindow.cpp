@@ -170,7 +170,6 @@ void AppbarWindow::updateGeometry() {
         }
         break;
     }
-
     case Qt::LeftEdge:
     case Qt::RightEdge: {
         int offset = workArea.bottom - d->trayPos.rc.bottom;

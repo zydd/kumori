@@ -4,7 +4,7 @@
 
 
 void LiveIcon::setIcon(const QPixmap &icon) {
-    qDebug();
+//    qDebug();
 
     this->_icon = icon;
     emit iconChanged();

@@ -4,7 +4,7 @@
 
 
 void TrayIcon::setTooltip(QString const& tooltip) {
-    qDebug() << data.hWnd << tooltip;
+//    qDebug() << data.hWnd << tooltip;
 
     if (_tooltip == tooltip)
         return;
