@@ -1,5 +1,9 @@
 #pragma once
 
+#include <array>
+
+#include "quuid.h"
+
 #include "liveicon.h"
 
 typedef struct HWND__ *HWND;
@@ -23,7 +27,8 @@ public:
         unsigned uID;
         unsigned uCallbackMessage;
         unsigned uVersion;
-    } data;
+        QUuid guid;
+    } data = {};
 
 private:
     QString _tooltip;

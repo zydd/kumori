@@ -65,6 +65,8 @@ int main(int argc, char *argv[]) {
     qmlRegisterSingletonType<TrayService>("kumori", 0, 1, "TrayService", &TrayService::instance);
     qmlRegisterSingletonType<WmService>("kumori", 0, 1, "WmService", &WmService::instance);
     qmlRegisterSingletonType<Ohm>("kumori", 0, 1, "Ohm", &Ohm::instance);
+
+    qmlRegisterUncreatableType<TrayItemsProxy>("kumori", 0, 1, "TrayItemsProxy", "TrayService.proxy()");
 #endif
 
 //    QSurfaceFormat::setDefaultFormat([]{

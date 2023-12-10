@@ -77,7 +77,7 @@ AppbarWindow {
             Layout.preferredWidth: contentWidth
             orientation: ListView.Horizontal
             layoutDirection: Qt.RightToLeft
-            model: TrayService
+            model: TrayService.proxy()
             clip: true
             Layout.leftMargin: 5
 

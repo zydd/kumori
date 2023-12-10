@@ -15,6 +15,23 @@
 
 #include "trayicon.h"
 
+static const QHash<QString, QUuid> defaultIconGuids = {
+    {"hardware",    "7820ae78-23e3-4229-82c1-e41cb67d5b9c"},
+    {"health",      "7820ae76-23e3-4229-82c1-e41cb67d5b9c"},
+    {"location",    "7820ae77-23e3-4229-82c1-e41cb67d5b9c"},
+    {"meetnow",     "7820ae83-23e3-4229-82c1-e41cb67d5b9c"},
+    {"microphone",  "7820ae82-23e3-4229-82c1-e41cb67d5b9c"},
+    {"network",     "7820ae74-23e3-4229-82c1-e41cb67d5b9c"},
+    {"power",       "7820ae75-23e3-4229-82c1-e41cb67d5b9c"},
+    {"update",      "7820ae81-23e3-4229-82c1-e41cb67d5b9c"},
+    {"volume",      "7820ae73-23e3-4229-82c1-e41cb67d5b9c"},
+};
+
+static const QVector<QUuid> actionCenterGuids = {
+    defaultIconGuids["network"],
+    defaultIconGuids["volume"],
+    defaultIconGuids["power"],
+};
 
 struct TrayServicePrivate {
     bool initialized = false;
@@ -133,26 +150,26 @@ void TrayService::timerEvent(QTimerEvent */*event*/) {
                  SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOSIZE);
 }
 
-QModelIndex TrayService::index(int row, int column, const QModelIndex &/*parent*/) const {
-    return createIndex(row, column);
+
+QModelIndex TrayService::index(int row, int /*column*/, const QModelIndex &/*parent*/) const {
+    return createIndex(row, 0);
 }
 
 QModelIndex TrayService::parent(const QModelIndex &child) const { return {}; }
 int TrayService::columnCount(const QModelIndex &parent) const { return 1; }
 
 int TrayService::rowCount(const QModelIndex &parent) const {
-    return _iconData.count();
+    return _trayIconMap.count();
 }
 
-
 QVariant TrayService::data(const QModelIndex &index, int role) const {
-    Q_ASSERT(index.row() < _trayIcons.size());
+    Q_ASSERT(index.row() < _trayIconList.size());
 
     switch (role) {
     case IdRole:
-        return intptr_t(_trayIcons[index.row()]->data.hWnd);
+        return intptr_t(_trayIconList[index.row()]->data.hWnd);
     case TrayIconRole:
-        return QVariant::fromValue(_trayIcons[index.row()]);
+        return QVariant::fromValue(_trayIconList[index.row()]);
     }
 
     Q_ASSERT(false);
@@ -227,12 +244,16 @@ LRESULT CALLBACK TrayServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
             case NIM_MODIFY: {
 //                qDebug() << "MODIFY" << trayData->nid.hWnd;
 
-                if (!::trayService->_iconData.contains(trayData->nid.hWnd)) {
+                if (!::trayService->_trayIconMap.contains(trayData->nid.hWnd)) {
                     qWarning() << "trying to modify icon before add:" << trayData->nid.hWnd;
 //                    return false;
                 }
 
 case_nim_modify:
+                if (!IsWindow(trayData->nid.hWnd)) {
+                    qWarning() << "invalid HWND" << trayData->nid.hWnd;
+                    break;
+                }
 
                 auto trayIcon = ::trayService->icon(trayData->nid.hWnd);
 
@@ -242,6 +263,15 @@ case_nim_modify:
 
                 if (trayData->nid.uFlags & NIF_MESSAGE)
                     trayIcon->data.uCallbackMessage = trayData->nid.uCallbackMessage;
+
+                if (trayData->nid.uFlags & NIF_GUID) {
+                    trayIcon->data.guid = trayData->nid.guidItem;
+
+                    // GUID affects sorting, emit dataChanged to notify the proxy model
+                    auto row = ::trayService->_trayIconList.indexOf(trayIcon);
+                    auto index = ::trayService->createIndex(row, 0);
+                    emit ::trayService->dataChanged(index, index, {TrayService::TrayIconRole});
+                }
 
                 if (trayData->nid.uFlags & NIF_TIP)
                     trayIcon->setTooltip(QString::fromWCharArray(trayData->nid.szTip));
@@ -258,13 +288,17 @@ case_nim_modify:
 
             case NIM_DELETE: {
                 qDebug() << "DELETE" << trayData->nid.hWnd;
-//                if (!::trayService->_iconData.contains(trayData->nid.hWnd))
-//                    return false;
+
+                // do not remove volume button
+                auto icon = ::trayService->_trayIconMap.value(trayData->nid.hWnd);
+                if (icon && icon->data.guid == defaultIconGuids["volume"]) {
+                    qDebug() << "DELETE volume ignored";
+                    return false;
+                }
 
                 ::trayService->removeIcon(trayData->nid.hWnd);
 
                 return true;
-
             }
 
             case NIM_SETFOCUS: {
@@ -275,7 +309,7 @@ case_nim_modify:
 
             case NIM_SETVERSION: {
                 qDebug() << "SETVERSION" << trayData->nid.hWnd << "v:" << trayData->nid.uVersion;
-                auto trayIcon = ::trayService->_iconData.value(trayData->nid.hWnd, nullptr);
+                auto trayIcon = ::trayService->_trayIconMap.value(trayData->nid.hWnd, nullptr);
                 if (!trayIcon)
                     return false;
 
@@ -294,8 +328,7 @@ case_nim_modify:
             }
             qDebug() << "WINNOTIFYICON" << notifyIcon->hWnd;
 
-
-            auto trayIcon = ::trayService->_iconData.value(notifyIcon->hWnd, nullptr);
+            auto trayIcon = ::trayService->_trayIconMap.value(notifyIcon->hWnd, nullptr);
             if (!trayIcon) {
                 qWarning() << "TrayIcon not found" << notifyIcon->hWnd;
                 return false;
@@ -331,16 +364,16 @@ case_nim_modify:
 
 
 TrayIcon *TrayService::icon(HWND hwnd) {
-    auto itr = _iconData.find(hwnd);
-    if (itr == _iconData.end()) {
-        itr = _iconData.insert(hwnd, new TrayIcon());
+    auto itr = _trayIconMap.find(hwnd);
+    if (itr == _trayIconMap.end()) {
+        itr = _trayIconMap.insert(hwnd, new TrayIcon());
         QObject::connect(itr.value(), &TrayIcon::invalidated, [this, hwnd]{ removeIcon(hwnd); });
 
         qDebug() << "add icon:" << hwnd;
 
-        auto index = _trayIcons.size();
+        auto index = _trayIconList.size();
         beginInsertRows({}, index, index);
-        _trayIcons.push_back(itr.value());
+        _trayIconList.push_back(itr.value());
         endInsertRows();
     }
     return itr.value();
@@ -350,18 +383,18 @@ TrayIcon *TrayService::icon(HWND hwnd) {
 void TrayService::removeIcon(HWND hwnd) {
     qDebug() << hwnd;
 
-    auto icon = _iconData.take(hwnd);
+    auto icon = _trayIconMap.take(hwnd);
     if (!icon)
         return;
 
-    auto index = std::distance(_trayIcons.begin(), std::find(_trayIcons.begin(), _trayIcons.end(), icon));
-    if (index >= _trayIcons.size()) {
+    auto index = std::distance(_trayIconList.begin(), std::find(_trayIconList.begin(), _trayIconList.end(), icon));
+    if (index >= _trayIconList.size()) {
         qWarning() << "not found in list:" << hwnd;
         return;
     }
 
     beginRemoveRows({}, index, index);
-    _trayIcons.remove(index);
+    _trayIconList.remove(index);
     endRemoveRows();
 
     delete icon;
@@ -419,11 +452,13 @@ HWND TrayServicePrivate::registerTrayWindow() {
     return hwndTray;
 }
 
+
 void TrayServicePrivate::destroyNotifyWindow() {
     qDebug();
     DestroyWindow(hwndNotify);
     UnregisterClass(L"TrayNotifyWnd", hInstance);
 }
+
 
 void TrayServicePrivate::destroyTrayWindow() {
     qDebug();
@@ -493,7 +528,14 @@ void TrayService::restoreSystemTaskbar() {
     SHAppBarMessage(ABM_SETSTATE, &abd);
 
     ShowWindow(d->hwndSystemTray, SW_SHOW);
-//    SetWindowPos(d->hwndSystemTray, HWND_BOTTOM, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+}
+
+
+TrayItemsProxy *TrayService::proxy() {
+    auto proxy = new TrayItemsProxy();
+    proxy->setSourceModel(this);
+    proxy->sort(0, Qt::DescendingOrder);
+    return proxy;
 }
 
 
@@ -662,4 +704,30 @@ int getItemCountW8() {
     pTrayNotifyW8->Release();
 
     return count;
+}
+
+
+bool TrayItemsProxy::filterAcceptsRow(int source_row, const QModelIndex &/*source_parent*/) const {
+//    auto trayService = reinterpret_cast<TrayService *>(sourceModel());
+//    auto icon = trayService->iconAt(source_row);
+    return true;
+}
+
+
+bool TrayItemsProxy::lessThan(const QModelIndex &source_left, const QModelIndex &source_right) const {
+    auto trayService = reinterpret_cast<TrayService *>(sourceModel());
+    auto left = trayService->iconAt(source_left.row());
+    auto right = trayService->iconAt(source_right.row());
+
+    auto left_guid_i = actionCenterGuids.indexOf(left->data.guid);
+    auto right_guid_i = actionCenterGuids.indexOf(right->data.guid);
+
+    if (left_guid_i >= 0 && right_guid_i >= 0)
+        return left_guid_i < right_guid_i;
+    else if (right_guid_i >= 0)
+        return true;
+    else if (left_guid_i >= 0)
+        return false;
+    else
+        return left->data.uID < right->data.uID;
 }
