@@ -50,6 +50,8 @@ public:
 
     Q_INVOKABLE void hideTaskbar();
     Q_INVOKABLE void showTaskbar();
+    Q_INVOKABLE void actionCenter();
+    Q_INVOKABLE void startMenu();
 
 public slots:
     void clearComponentCache();

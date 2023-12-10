@@ -12,6 +12,7 @@
 #include <qwinfunctions.h>
 
 #ifdef Q_OS_WIN
+#include <Windows.h>
 #include <dwmapi.h>
 #endif
 
@@ -232,4 +233,38 @@ void Kumori::showTaskbar() {
     auto taskbar = FindWindow(L"Shell_TrayWnd", NULL);
     ShowWindow(taskbar, SW_SHOW);
     GetParent(taskbar);
+}
+
+void ShellKeyCombo(std::initializer_list<WORD> keys) {
+    QVector<INPUT> inputs;
+    auto info = GetMessageExtraInfo();
+
+    for (WORD key : keys) {
+        INPUT input = {0};
+        input.type = INPUT_KEYBOARD;
+        input.ki.dwExtraInfo = info;
+        input.ki.wVk = key;
+
+        inputs.push_back(input);
+    }
+
+    for (auto itr = std::reverse_iterator(keys.end()); itr != std::reverse_iterator(keys.begin()); ++itr) {
+        INPUT input = {0};
+        input.type = INPUT_KEYBOARD;
+        input.ki.dwExtraInfo = info;
+        input.ki.wVk = *itr;
+        input.ki.dwFlags = KEYEVENTF_KEYUP;
+
+        inputs.push_back(input);
+    }
+
+    SendInput(inputs.size(), inputs.data(), sizeof(INPUT));
+}
+
+void Kumori::actionCenter() {
+    ShellKeyCombo({VK_LWIN, 'A'});
+}
+
+void Kumori::startMenu() {
+    ShellKeyCombo({VK_LWIN});
 }

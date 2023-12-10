@@ -42,10 +42,15 @@ signals:
 
 class TrayIconPainter : public LiveIconPainter {
     Q_OBJECT
+    Q_PROPERTY(Qt::MouseButtons acceptedButtons MEMBER _acceptedButtons NOTIFY acceptedButtonsChanged)
+
 public:
     explicit TrayIconPainter(QQuickItem *parent = nullptr);
 
     inline TrayIcon *trayIcon() { return qobject_cast<TrayIcon *>(liveIcon()); }
+
+private:
+    Qt::MouseButtons _acceptedButtons = Qt::AllButtons;
 
 protected:
     // QQuickItem interface
@@ -56,5 +61,8 @@ protected:
 
     // QQuickItem interface
     virtual void geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry) override;
+
+signals:
+    void acceptedButtonsChanged();
 };
 

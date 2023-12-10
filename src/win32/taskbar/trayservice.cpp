@@ -535,10 +535,10 @@ void TrayService::restoreSystemTaskbar() {
 }
 
 
-TrayItemsProxy *TrayService::proxy() {
-    auto proxy = new TrayItemsProxy();
+TrayItemsProxy *TrayService::proxy(FilteringMode mode) {
+    auto proxy = new TrayItemsProxy(mode);
     proxy->setSourceModel(this);
-    proxy->sort(0, Qt::DescendingOrder);
+    proxy->sort(0);
     return proxy;
 }
 
@@ -712,9 +712,20 @@ int getItemCountW8() {
 
 
 bool TrayItemsProxy::filterAcceptsRow(int source_row, const QModelIndex &/*source_parent*/) const {
-//    auto trayService = reinterpret_cast<TrayService *>(sourceModel());
-//    auto icon = trayService->iconAt(source_row);
-    return true;
+    auto trayService = reinterpret_cast<TrayService *>(sourceModel());
+    auto icon = trayService->iconAt(source_row);
+    switch (_filterMode) {
+    case TrayService::ActionCenterIcons:
+        return actionCenterGuids.contains(icon->data.guid);
+
+    case TrayService::VisibleIcons:
+        return !actionCenterGuids.contains(icon->data.guid);
+
+    case TrayService::HiddenIcons:
+        return false;
+    }
+
+//    return true;
 }
 
 

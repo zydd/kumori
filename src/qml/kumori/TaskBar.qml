@@ -26,6 +26,17 @@ AppbarWindow {
         anchors.fill: parent
         spacing: 0
 
+        ToolButton {
+            palette.button: Qt.rgba(0, 0, 0, 0.4)
+            palette.mid: Qt.rgba(0.5, 0.5, 0.5, 0.4)
+            palette.buttonText: 'white'
+            text: 'スタート'
+            leftPadding: 15
+            rightPadding: 15
+
+            onClicked: Kumori.startMenu()
+        }
+
         ListView {
             id: taskView
             Layout.fillWidth: true
@@ -34,7 +45,7 @@ AppbarWindow {
             orientation: ListView.Horizontal
             model: WmService
             clip: true
-            //    boundsBehavior: Flickable.StopAtBounds
+//            boundsBehavior: Flickable.StopAtBounds
 
             delegate: ToolButton {
                 width: 300
@@ -72,18 +83,17 @@ AppbarWindow {
 
         ListView {
             id: trayView
-            //    Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.preferredWidth: contentWidth
             orientation: ListView.Horizontal
             layoutDirection: Qt.RightToLeft
-            model: TrayService.proxy()
+            model: TrayService.proxy(TrayService.VisibleIcons)
             clip: true
             Layout.leftMargin: 5
 
             delegate: ToolButton {
-                width: trayView.height
-                height: trayView.height
+                width: root.thickness
+                height: root.thickness
 //                hoverEnabled: true
                 palette.button: 'transparent'
 
@@ -92,13 +102,37 @@ AppbarWindow {
 //                ToolTip.visible: hovered && modelData.tooltip
 //                ToolTip.text: modelData.tooltip
 
-                contentItem:
-                    TrayIcon {
-                        anchors.centerIn: parent
+                TrayIcon {
+                    anchors.centerIn: parent
+                    liveIcon: model.trayIcon
+                    width: 24
+                    height: 24
+                }
+            }
+        }
+
+        ToolButton {
+            id: actionCenter
+            Layout.fillHeight: true
+            Layout.leftMargin: 5
+
+            palette.button: Qt.rgba(0, 0, 0, 0.4)
+            palette.mid: Qt.rgba(0.5, 0.5, 0.5, 0.4)
+
+            onClicked: Kumori.actionCenter()
+
+            contentItem: Row {
+                spacing: 5
+                Repeater {
+                    model: TrayService.proxy(TrayService.ActionCenterIcons)
+
+                    delegate: TrayIcon {
+                        acceptedButtons: Qt.RightButton
                         liveIcon: model.trayIcon
                         width: 24
                         height: 24
                     }
+                }
             }
         }
 
@@ -106,10 +140,14 @@ AppbarWindow {
             id: time
             color: 'white'
             Layout.preferredWidth: 80
-            font.pixelSize: parent.height * 0.65
+//            Layout.fillHeight: true
+            Layout.alignment: Qt.AlignCenter
+            Layout.bottomMargin: 6
+            font.pixelSize: root.thickness * 0.65
             font.weight: Font.Light
             font.family: 'Segoe UI'
             horizontalAlignment: Qt.AlignCenter
+//            verticalAlignment: Qt.AlignCenter
 
             // disable subpixel antialiasing
             style: Text.Outline

@@ -12,16 +12,7 @@ class QJSEngine;
 
 struct TrayServicePrivate;
 class TrayIcon;
-
-
-class TrayItemsProxy : public QSortFilterProxyModel {
-    Q_OBJECT
-
-protected:
-    // QSortFilterProxyModel interface
-    virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
-    virtual bool lessThan(const QModelIndex &source_left, const QModelIndex &source_right) const override;
-};
+class TrayItemsProxy;
 
 
 class TrayService : public QAbstractItemModel {
@@ -33,13 +24,19 @@ public:
         IdRole = Qt::UserRole + 1,
         TrayIconRole
     };
+    enum FilteringMode {
+        VisibleIcons,
+        HiddenIcons,
+        ActionCenterIcons,
+    };
+    Q_ENUM(FilteringMode)
 
     static QObject *instance(QQmlEngine *, QJSEngine *);
     inline TrayIcon *iconAt(unsigned i) { return _trayIconList[i]; }
 
     Q_INVOKABLE void init();
     Q_INVOKABLE void restoreSystemTaskbar();
-    Q_INVOKABLE TrayItemsProxy *proxy();
+    Q_INVOKABLE TrayItemsProxy *proxy(FilteringMode mode);
 
 private:
     explicit TrayService(QObject *parent = nullptr);
@@ -65,5 +62,21 @@ protected:
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
 };
+
+class TrayItemsProxy : public QSortFilterProxyModel {
+    Q_OBJECT
+public:
+    inline TrayItemsProxy(TrayService::FilteringMode mode):
+        _filterMode{mode} { }
+
+private:
+    TrayService::FilteringMode _filterMode;
+
+protected:
+    // QSortFilterProxyModel interface
+    virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
+    virtual bool lessThan(const QModelIndex &source_left, const QModelIndex &source_right) const override;
+};
+
 
 #endif // TRAYSERVICE_H

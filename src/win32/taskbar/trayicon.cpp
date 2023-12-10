@@ -60,6 +60,9 @@ TrayIconPainter::TrayIconPainter(QQuickItem *parent)
 
 
 void TrayIconPainter::mousePressEvent(QMouseEvent *event) {
+    if (!(event->button() & _acceptedButtons))
+        return QQuickPaintedItem::mousePressEvent(event);
+
     qDebug() << event;
 
     if (!trayIcon()->valid()) return;
@@ -95,6 +98,9 @@ void TrayIconPainter::mousePressEvent(QMouseEvent *event) {
 
 
 void TrayIconPainter::mouseReleaseEvent(QMouseEvent *event) {
+    if (!(event->button() & _acceptedButtons))
+        return QQuickPaintedItem::mousePressEvent(event);
+
     qDebug() << event;
 
     switch (event->button()) {
@@ -130,6 +136,9 @@ void TrayIconPainter::mouseReleaseEvent(QMouseEvent *event) {
 
 
 void TrayIconPainter::mouseDoubleClickEvent(QMouseEvent *event) {
+    if (!(event->button() & _acceptedButtons))
+        return QQuickPaintedItem::mousePressEvent(event);
+
     qDebug() << event;
 
     switch (event->button()) {
