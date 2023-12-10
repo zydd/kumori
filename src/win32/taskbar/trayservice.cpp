@@ -257,7 +257,6 @@ case_nim_modify:
 
                 auto trayIcon = ::trayService->icon(trayData->nid.hWnd);
 
-                trayIcon->data.hWnd      = trayData->nid.hWnd;
                 trayIcon->data.uID       = trayData->nid.uID;
                 trayIcon->data.uVersion  = trayData->nid.uVersion;
 
@@ -289,7 +288,7 @@ case_nim_modify:
             case NIM_DELETE: {
                 qDebug() << "DELETE" << trayData->nid.hWnd;
 
-                // do not remove volume button
+                // do not remove volume icon
                 auto icon = ::trayService->_trayIconMap.value(trayData->nid.hWnd);
                 if (icon && icon->data.guid == defaultIconGuids["volume"]) {
                     qDebug() << "DELETE volume ignored";
@@ -364,19 +363,24 @@ case_nim_modify:
 
 
 TrayIcon *TrayService::icon(HWND hwnd) {
-    auto itr = _trayIconMap.find(hwnd);
-    if (itr == _trayIconMap.end()) {
-        itr = _trayIconMap.insert(hwnd, new TrayIcon());
-        QObject::connect(itr.value(), &TrayIcon::invalidated, [this, hwnd]{ removeIcon(hwnd); });
+    auto icon = _trayIconMap.value(hwnd);
+    if (icon)
+        return icon;
 
-        qDebug() << "add icon:" << hwnd;
+    icon = new TrayIcon();
+    icon->data.hWnd = hwnd;
 
-        auto index = _trayIconList.size();
-        beginInsertRows({}, index, index);
-        _trayIconList.push_back(itr.value());
-        endInsertRows();
-    }
-    return itr.value();
+    _trayIconMap.insert(hwnd, icon);
+    QObject::connect(icon, &TrayIcon::invalidated, [this, hwnd]{ removeIcon(hwnd); });
+
+    qDebug() << "add icon:" << hwnd;
+
+    auto index = _trayIconList.size();
+    beginInsertRows({}, index, index);
+    _trayIconList.push_back(icon);
+    endInsertRows();
+
+    return icon;
 }
 
 
@@ -722,6 +726,8 @@ bool TrayItemsProxy::lessThan(const QModelIndex &source_left, const QModelIndex 
     auto left_guid_i = actionCenterGuids.indexOf(left->data.guid);
     auto right_guid_i = actionCenterGuids.indexOf(right->data.guid);
 
+//    qDebug() << source_left.row() << source_right.row() << left_guid_i << right_guid_i << left->data.hWnd << right->data.hWnd;
+
     if (left_guid_i >= 0 && right_guid_i >= 0)
         return left_guid_i < right_guid_i;
     else if (right_guid_i >= 0)
@@ -729,5 +735,5 @@ bool TrayItemsProxy::lessThan(const QModelIndex &source_left, const QModelIndex 
     else if (left_guid_i >= 0)
         return false;
     else
-        return left->data.uID < right->data.uID;
+        return left->data.hWnd < right->data.hWnd;
 }
