@@ -165,7 +165,7 @@ void AppbarWindow::updateGeometry() {
     switch (_edge) {
     case Qt::BottomEdge: {
         int offset = workArea.bottom + (_registered ? _thickness : 0) - d->trayPos.rc.bottom;
-        if (success && offset > 0) {
+        if (success && workArea.bottom < screenRect.height() && offset > 0) {
             qWarning() << "QUERYPOS bottom offset" << offset;
             d->trayPos.rc.top += offset;
             d->trayPos.rc.bottom += offset;
@@ -175,7 +175,7 @@ void AppbarWindow::updateGeometry() {
     case Qt::LeftEdge:
     case Qt::RightEdge: {
         int offset = workArea.bottom - d->trayPos.rc.bottom;
-        if (success && offset > 0) {
+        if (success && workArea.bottom < screenRect.height() && offset > 0) {
             qWarning() << "QUERYPOS bottom offset" << offset;
             d->trayPos.rc.bottom += offset;
         }
