@@ -243,9 +243,6 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
             if (hwndParam) {
                 auto wnd = wmService->window(hwndParam);
 
-    //            if (!wnd->listed() && wnd->canAddToTaskbar())
-    //                wmService->list(wnd);
-
                 if (wmService->_activeWindow)
                     wmService->_activeWindow->setActive(false);
 
@@ -282,19 +279,7 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
             qDebug() << "REDRAW" << hwndParam;
             auto wnd = wmService->window(hwndParam);
             wnd->loadIcon();
-
             emit wnd->titleChanged();
-
-            qDebug() << "listed:" << wnd->cloaked();
-
-//            if (wnd->listed() != wnd->canAddToTaskbar()) {
-//                qDebug() << "list status changed:" << wnd->listed();
-//                if (wnd->listed()) {
-//                    wmService->unlist(wnd);
-//                } else {
-//                    wmService->list(wnd);
-//                }
-//            }
         }
             break;
         case HSHELL_FLASH:
@@ -314,6 +299,8 @@ LRESULT CALLBACK WmServicePrivate::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
             qWarning() << "unhandled event" << wParam << lParam;
             break;
         }
+
+        return true;
     }
 
     return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -334,8 +321,10 @@ NativeWindow *WmService::window(HWND hwnd) {
         wnd = new NativeWindow{hwnd};
         _nativeWindows[hwnd] = wnd;
 
-//        if (wnd->canAddToTaskbar() && !wnd->cloaked())
-//            list(wnd);
+        if (wnd->role() == NativeWindow::StartMenuWindow) {
+            _startMenu = wnd;
+            emit startMenuChanged();
+        }
     }
     return wnd;
 }
@@ -391,6 +380,7 @@ void WmService::enumerateWindows() {
     Q_ASSERT(_listedWindows.size() == 0);
 
     struct WindowList {
+        NativeWindow *startMenu = nullptr;
         QVector<NativeWindow *> listedWindows;
         QHash<HWND, NativeWindow *> nativeWindows;
     };
@@ -408,8 +398,15 @@ void WmService::enumerateWindows() {
             wnd->setListed(true);
             data->listedWindows.push_back(wnd);
         }
+
+        if (wnd->role() == NativeWindow::StartMenuWindow)
+            data->startMenu = wnd;
+
         return true;
     }, LPARAM(&windows));
+
+    _startMenu = windows.startMenu;
+    emit startMenuChanged();
 
     beginInsertRows({}, 0, windows.listedWindows.size() - 1);
     _listedWindows = std::move(windows.listedWindows);
@@ -425,4 +422,6 @@ void WmService::enumerateWindows() {
         }
     }
 }
+
+
 

@@ -46,6 +46,7 @@ Control {
         }
 
         function save() {
+            console.log('save')
             for (var key in param) {
                 if (typeof param[key] != 'function')
                     settings.setValue(key, param[key])

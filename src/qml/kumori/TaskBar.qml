@@ -27,14 +27,25 @@ AppbarWindow {
         spacing: 0
 
         ToolButton {
+            Layout.fillHeight: true
             palette.button: Qt.rgba(0, 0, 0, 0.4)
             palette.mid: Qt.rgba(0.5, 0.5, 0.5, 0.4)
             palette.buttonText: 'white'
+            font.pixelSize: root.thickness * 0.5
             text: 'スタート'
-            leftPadding: 15
-            rightPadding: 15
+            leftPadding: 20
+            rightPadding: 20
+            checkable: false
 
-            onClicked: Kumori.startMenu()
+            background: Rectangle {
+                color: (!WmService.startMenu || !WmService.startMenu.active) ?
+                           parent.palette.button : parent.palette.mid
+            }
+
+            onClicked:
+                if (!WmService.startMenu || !WmService.startMenu.active)
+                    Kumori.startMenu()
+                else WmService.startMenu.active = false
         }
 
         ListView {
@@ -57,6 +68,7 @@ AppbarWindow {
                     color: 'white'
                     elide: Text.ElideRight
                     leftPadding: winIcon.width + parent.padding
+                    font.pointSize: 8
 
                     LiveIcon {
                         id: winIcon

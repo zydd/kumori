@@ -12,11 +12,46 @@
 
 #include "liveicon.h"
 
+
+static QString getProcessName(HWND hwnd) {
+    DWORD pid = 0;
+    GetWindowThreadProcessId(hwnd, &pid);
+    if (pid) {
+        // open process
+        // QueryLimitedInformation flag allows us to access elevated applications as well
+        auto hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+
+        // get path
+        WCHAR _processName[1024];
+        DWORD processNameLength = sizeof(_processName) / sizeof(*_processName);
+        QueryFullProcessImageName(hProc, 0, _processName, &processNameLength);
+        return QString::fromWCharArray(_processName, processNameLength);
+    } else {
+        qWarning() << "could not get process name for window" << hwnd;
+    }
+
+    return {};
+}
+
+
 NativeWindow::NativeWindow(HWND hwnd, QObject *parent)
     : QObject{parent}, _hwnd{hwnd}
 {
     qDebug() << _hwnd;
     _icon = new LiveIcon();
+
+    WCHAR windowClass[256];
+    GetClassName(_hwnd, windowClass, sizeof(windowClass) / sizeof(*windowClass));
+    _windowClass = QString::fromWCharArray(windowClass);
+
+    _processName = getProcessName(_hwnd);
+
+    if (_windowClass == "Windows.UI.Core.CoreWindow") {
+        if (_processName.endsWith("SearchHost.exe"))
+            _role = StartMenuWindow;
+        else if (_processName.endsWith("ShellExperienceHost.exe"))
+            _role = ShellWindow;
+    }
 }
 
 NativeWindow::~NativeWindow() {
@@ -42,41 +77,25 @@ bool NativeWindow::canAddToTaskbar() {
         return false;
     }
 
-    DWORD pid = 0;
-    GetWindowThreadProcessId(_hwnd, &pid);
-    QString processName;
-    if (pid) {
-        // open process
-        // QueryLimitedInformation flag allows us to access elevated applications as well
-        auto hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
-
-        // get path
-        WCHAR _processName[1024];
-        DWORD processNameLength = sizeof(_processName) / sizeof(*_processName);
-        QueryFullProcessImageName(hProc, 0, _processName, &processNameLength);
-        processName = QString::fromWCharArray(_processName, processNameLength);
-    }
-
-    // UWP shell windows that are not cloaked should be hidden from the taskbar, too.
-    WCHAR _windowClass[256];
-    GetClassName(_hwnd, _windowClass, sizeof(_windowClass) / sizeof(*_windowClass));
-    auto windowClass = QString::fromWCharArray(_windowClass);
-    if (windowClass == "ApplicationFrameWindow" || windowClass == "Windows.UI.Core.CoreWindow") {
+    // UWP shell windows that are not cloaked should be hidden from the taskbar
+    if (_windowClass == "ApplicationFrameWindow" || _windowClass == "Windows.UI.Core.CoreWindow") {
         if ((GetWindowLong(_hwnd, GWL_EXSTYLE) & WS_EX_WINDOWEDGE) == 0) {
-            qDebug() << "UWP non-window:" << _hwnd << title();
+            qDebug() << "shell window:" << _hwnd << title().toUtf8() << _windowClass << _processName;
             return false;
         }
-    } else if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10
-               && (windowClass == "ImmersiveBackgroundWindow"
-                   || windowClass == "SearchPane"
-                   || windowClass == "NativeHWNDHost"
-                   || windowClass == "Shell_CharmWindow"
-                   || windowClass == "ImmersiveLauncher")
-               && processName.toLower().contains("explorer.exe")
-            ) {
-        qDebug() << "immersive shell window: " << _hwnd << title();
-        return false;
     }
+
+//    if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10
+//               && (windowClass == "ImmersiveBackgroundWindow"
+//                   || windowClass == "SearchPane"
+//                   || windowClass == "NativeHWNDHost"
+//                   || windowClass == "Shell_CharmWindow"
+//                   || windowClass == "ImmersiveLauncher")
+//               && processName.toLower().endsWith("explorer.exe")
+//            ) {
+//        qDebug() << "immersive shell window: " << _hwnd << title();
+//        return false;
+//    }
 
     qDebug() << "visible window:" << _hwnd << title();
     return true;
@@ -157,7 +176,6 @@ void NativeWindow::loadIcon() {
         hIcon = LoadIcon(NULL, IDI_APPLICATION);
 
     // FIXME: WinRT app icons
-    // TODO: Update icons dynamically
 
     auto pixmap = QtWin::fromHICON(hIcon);
     _icon->setIcon(pixmap);

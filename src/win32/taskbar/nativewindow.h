@@ -15,6 +15,13 @@ class NativeWindow : public QObject {
     Q_PROPERTY(LiveIcon *icon READ icon CONSTANT)
 
 public:
+    enum WindowRole {
+        NormalWindow,
+        ShellWindow,
+        StartMenuWindow,
+        ActionCenterWindow,
+        NotificationCenterWindow,
+    };
     explicit NativeWindow(HWND hwnd, QObject *parent = nullptr);
     ~NativeWindow();
 
@@ -25,14 +32,17 @@ public:
     bool minimized();
     int showStyle();
     void loadIcon();
-    inline bool listed() { return _listed; }
     bool canAddToTaskbar();
     bool cloaked();
 
-    HWND hwnd() { return _hwnd; }
     QString title();
-    bool active() const { return _active; }
-    LiveIcon *icon() { return _icon; }
+    inline bool listed() const { return _listed; }
+    inline HWND hwnd() const { return _hwnd; }
+    inline bool active() const { return _active; }
+    inline LiveIcon *icon() { return _icon; }
+    inline QString const& windowClass() const { return _windowClass; }
+    inline QString const& processName() const { return _processName; }
+    inline WindowRole role() const { return _role; }
 
     void setActive(bool newActive);
     inline void setListed(bool listed) { _listed = listed; }
@@ -42,6 +52,9 @@ private:
     bool _active = false;
     LiveIcon *_icon = nullptr;
     bool _listed = false;
+    QString _windowClass;
+    QString _processName;
+    WindowRole _role = NormalWindow;
 
     void makeForeground();
 
