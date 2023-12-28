@@ -29,6 +29,7 @@ Control {
         property string mini_image: 'fractal'
         property string formula: 'clog(vec2(z.x, abs(z.y))) + c'
         property string color_method: 'combined'
+        property bool flip: false
     }
 
     Settings {
@@ -74,8 +75,10 @@ Control {
             property string text: 'ducks'
             onCurrentTextChanged: {
                 text = currentText
-                if (currentText)
+                if (currentText) {
                     root['preset_' + currentText]()
+                    root.save()
+                }
             }
             onTextChanged: currentIndex = find(text, Qt.MatchExactly)
         }
@@ -103,6 +106,7 @@ Control {
             wheelEnabled: true
             model: [
                 'combined',
+                'combined2',
                 'norm_itr_count',
                 'iteration',
                 'clamp_cyclic_log',
@@ -248,6 +252,7 @@ Control {
         param.mini_image = 'fractal'
         param.formula = 'clog(vec2(z.x, abs(z.y))) + c'
         param.color_method = 'cyclic_log_log_yb'
+        param.flip = false
     }
 
     function preset_mandelbrot() {
@@ -267,6 +272,7 @@ Control {
         param.mini_image = 'fractal'
         param.formula = 'cmul(z, z) + c'
         param.color_method = 'iteration'
+        param.flip = false
     }
 
     function preset_nautilus() {
@@ -291,7 +297,8 @@ Control {
             "zoom": 0.9935743920840994,
             "col": 22.430370614359212,
             "col_shift": 3.4500791190303746,
-            "col_variation": 5
+            "col_variation": 5,
+            "flip": true,
         }
         Object.assign(param, config)
     }

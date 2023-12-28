@@ -57,7 +57,7 @@ Item {
         property real zoom: param.zoom
         property real map_zoom: param.map_zoom
         property real map_size: param.map_size
-        property real ratio: width / height
+        property real ratio: param.flip ? - width / height : width / height
         property point center: Qt.point(param.center_x, param.center_y)
         property real rotation: param.rotation
         property size pixel: Qt.size(1 / width, 1 / height);
@@ -212,6 +212,11 @@ Item {
             ctrl.rot_a = 0
             ctrl.rot_v = 0
             param.rotation = 0
+            param.flip = false
+            return
+
+        case Qt.Key_U:
+            param.flip = !param.flip
             return
 
         case Qt.Key_H:

@@ -143,14 +143,24 @@ vec3 color_norm_itr_count(vec2 z, int i, float mean) {
     return color;
 }
 
+vec3 color_norm_itr_count2(vec2 z, int i, float mean) {
+    const float k = 2.0; // power
+    float sn = float(i) - log2(log2(dot(z,z))) + 4.0;
+    float sit = float(i) - log2(log2(dot(z,z))/(log2(esc)))/log2(k);
+    vec3 color = vec3(0.0);
+    if (i < iter)
+        color = 0.5 + 0.5*cos(1.9 + sit*0.075*k + vec3(0.0, 0.4, 0.87931));
+    return color;
+}
+
 vec3 color_cyclic_log_log_yb(vec2 z, int i, float m) {
     float ci = col * log2(1.0 + log2(1.0 + m)) - col_shift;
     return 0.5 + 0.5 * cos(ci + vec3(0.87931, 0.4, 0.0));
 }
 
 vec3 color_cyclic_log_log_yb2(vec2 z, int i, float m) {
-    float ci = col_variation * (float(i) - log2(log2(m * col))) - col_shift;
-    return 0.5 + 0.5 * cos(ci + vec3(0.0, 0.4, 0.87931));
+    float ci = col * log2(1.0 + log2(1.0 + m)) - col_shift;
+    return 0.5 + 0.5 * cos(ci + vec3(pi - 0.87931, pi - 0.4, pi - 0.0));
 }
 
 vec3 color_cyclic_log_log_pg(vec2 z, int i, float m) {
@@ -163,6 +173,13 @@ vec3 color_combined(vec2 z, int i, float mean) {
         return color_norm_itr_count(z, i, mean);
     else
         return color_cyclic_log_log_yb(z, i, mean);
+}
+
+vec3 color_combined2(vec2 z, int i, float mean) {
+    if (i < iter)
+        return color_norm_itr_count2(z, i, mean);
+    else
+        return color_cyclic_log_log_yb2(z, i, mean);
 }
 
 vec3 color_clamp_cyclic_log(vec2 z, int i, float m) {
@@ -291,7 +308,7 @@ void main() {
 #endif
 
 #if SHOW_MAP
-    vec2 mapc = qt_TexCoord0 - vec2(1.0 - map_size/ratio, 1.0 - map_size);
+    vec2 mapc = qt_TexCoord0 - vec2(1.0 - abs(map_size/ratio), 1.0 - map_size);
     float mapd = length(vec2(mapc.x * ratio, mapc.y));
     if (mapd < map_size) {
         vec2 uv = mapc + vec2(0.5, 0.5);
