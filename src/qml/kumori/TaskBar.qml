@@ -96,6 +96,15 @@ AppbarWindow {
                     opacity: 0.1
                 }
 
+                Connections {
+                    target: model.nativeWindow
+
+                    function onActiveChanged() {
+                        if (model.nativeWindow.active)
+                            taskView.positionViewAtIndex(model.row, ListView.Contain)
+                    }
+                }
+
                 onClicked:
                     if (model.nativeWindow.active)
                         model.nativeWindow.minimize()
