@@ -41,6 +41,7 @@ public:
     Q_INVOKABLE void ignoreAeroPeek(QQuickWindow *window);
     Q_INVOKABLE void drawOverDesktop(QQuickWindow *window);
     Q_INVOKABLE void drawUnderDesktop(QQuickWindow *window);
+    Q_INVOKABLE void blurWindowBackground(QQuickWindow *window);
 
     Q_INVOKABLE void addConfig(QString const& key, QVariant const& defaultValue) {
         addConfig(key, defaultValue, false, false); }
@@ -51,6 +52,7 @@ public:
     Q_INVOKABLE void hideTaskbar();
     Q_INVOKABLE void showTaskbar();
     Q_INVOKABLE void actionCenter();
+    Q_INVOKABLE void notificationArea();
     Q_INVOKABLE void startMenu();
 
 public slots:
