@@ -107,6 +107,16 @@ void TrayService::init() {
     // TODO: check if there are multiple instances of Shell_TrayWnd and fail
     d->hwndSystemTray = FindWindow(L"Shell_TrayWnd", NULL);
     {
+        // FIXME: if explorer taskbar is set to auto-hide the area
+        // of the custom appbar does not get registered correctly.
+
+        // For now setting it to ABS_ALWAYSONTOP
+        d->systemTrayState.cbSize = sizeof(APPBARDATA);
+        d->systemTrayState.lParam = ABS_ALWAYSONTOP;
+        d->systemTrayState.hWnd = d->hwndSystemTray;
+        SHAppBarMessage(ABM_SETSTATE, &d->systemTrayState);
+    }
+    {
         d->systemTrayState.cbSize = sizeof(APPBARDATA);
         d->systemTrayState.lParam = ABS_AUTOHIDE;
         d->systemTrayState.hWnd = d->hwndSystemTray;
@@ -527,6 +537,7 @@ void TrayService::restoreSystemTaskbar() {
 
     APPBARDATA abd;
     abd.cbSize = sizeof(APPBARDATA);
+    // TODO: restore previous state iso. always setting to ABS_ALWAYSONTOP
     abd.lParam = ABS_ALWAYSONTOP;
     abd.hWnd = d->hwndSystemTray;
     SHAppBarMessage(ABM_SETSTATE, &abd);
