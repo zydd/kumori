@@ -14,6 +14,7 @@ AppbarWindow {
         TrayService.init()
         WmService.init()
         root.show()
+        Kumori.blurWindowBackground(root)
     }
 
     Rectangle {
@@ -27,15 +28,20 @@ AppbarWindow {
         spacing: 0
 
         ToolButton {
+            id: startBtn
+            Layout.preferredWidth: 80
             Layout.fillHeight: true
+            Layout.alignment: Qt.AlignCenter
+            Layout.bottomMargin: 6
+
+            text: 'スタート'
+
+            font.pixelSize: root.thickness * 0.5
+            font.weight: Font.Light
+
             palette.button: Qt.rgba(0, 0, 0, 0.4)
             palette.mid: Qt.rgba(0.5, 0.5, 0.5, 0.4)
             palette.buttonText: 'white'
-            font.pixelSize: root.thickness * 0.5
-            text: 'スタート'
-            leftPadding: 20
-            rightPadding: 20
-            checkable: false
 
             background: Rectangle {
                 color: (!WmService.startMenu || !WmService.startMenu.active) ?
@@ -60,23 +66,28 @@ AppbarWindow {
 
             delegate: ToolButton {
                 width: 300
-                height: taskView.height
-                contentItem: Label {
-                    text: model.nativeWindow.title
-                    horizontalAlignment: Qt.AlignLeft
-                    verticalAlignment: Qt.AlignVCenter
-                    color: 'white'
-                    elide: Text.ElideRight
-                    leftPadding: winIcon.width + parent.padding
-                    font.pointSize: 8
+                height: root.thickness
+                padding: 5
 
+                font.pixelSize: root.thickness * 0.4
+
+                palette.button: Qt.rgba(0, 0, 0, 0.4)
+                palette.mid: Qt.rgba(0.5, 0.5, 0.5, 0.4)
+                palette.buttonText: 'white'
+
+                contentItem: RowLayout {
                     LiveIcon {
                         id: winIcon
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
                         liveIcon: model.nativeWindow.icon
                         width: 24
                         height: 24
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: model.nativeWindow.title
+                        color: palette.buttonText
+                        elide: Qt.ElideRight
                     }
                 }
 
@@ -100,7 +111,6 @@ AppbarWindow {
             orientation: ListView.Horizontal
             layoutDirection: Qt.RightToLeft
             model: TrayService.proxy(TrayService.VisibleIcons)
-            clip: true
             Layout.leftMargin: 5
 
             delegate: ToolButton {
@@ -130,12 +140,14 @@ AppbarWindow {
 
             palette.button: Qt.rgba(0, 0, 0, 0.4)
             palette.mid: Qt.rgba(0.5, 0.5, 0.5, 0.4)
+            visible: actionCenterIcons.count
 
             onClicked: Kumori.actionCenter()
 
             contentItem: Row {
                 spacing: 5
                 Repeater {
+                    id: actionCenterIcons
                     model: TrayService.proxy(TrayService.ActionCenterIcons)
 
                     delegate: TrayIcon {
@@ -148,43 +160,31 @@ AppbarWindow {
             }
         }
 
-        Label {
-            id: time
-            color: 'white'
+        ToolButton {
+            id: clock
             Layout.preferredWidth: 80
-//            Layout.fillHeight: true
             Layout.alignment: Qt.AlignCenter
             Layout.bottomMargin: 6
             font.pixelSize: root.thickness * 0.65
             font.weight: Font.Light
-            font.family: 'Segoe UI'
-            horizontalAlignment: Qt.AlignCenter
-//            verticalAlignment: Qt.AlignCenter
 
-            // disable subpixel antialiasing
-            style: Text.Outline
-            styleColor: 'transparent'
+            palette.button: Qt.rgba(0, 0, 0, 0.4)
+            palette.mid: Qt.rgba(0.5, 0.5, 0.5, 0.4)
+            palette.buttonText: 'white'
 
-            //   layer.enabled: true
-            //   layer.effect: DropShadow {
-            //       color: 'black'
-            //       radius: 8
-            //       samples: 15
-            //       spread: 0.2
-            //   }
+            onClicked: Kumori.notificationArea()
+        }
+
+        Timer {
+            running: true
+            repeat: true
+            interval: 100
+
+            onTriggered: {
+                var date = new Date()
+                clock.text = Qt.formatDateTime(date, 'hh:mm')
+                interval = 60 * 1000 - (date.getSeconds() * 1000 + date.getMilliseconds())
+            }
         }
     }
-
-    Timer {
-        running: true
-        repeat: true
-        interval: 100
-
-        onTriggered: {
-            var date = new Date()
-            time.text = Qt.formatDateTime(date, 'hh:mm')
-            interval = 60 * 1000 - (date.getSeconds() * 1000 + date.getMilliseconds())
-        }
-    }
-
 }
