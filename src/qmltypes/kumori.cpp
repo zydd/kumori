@@ -46,7 +46,7 @@ Kumori::Kumori(QStringList args):
     addConfig("appDir", appDir);
     addConfig("appImportDir", appDir + "/qml");
     addConfig("userImportDir",
-              QStringLiteral("%1/%2/desktop")
+              QStringLiteral("%1/%2")
               .arg(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
               .arg(qApp->applicationName()));
     addConfig("monitoredFileTypes", QStringList{"*.qml", "*.vert", "*.frag"});
