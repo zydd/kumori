@@ -60,7 +60,10 @@ Item {
         property real ratio: param.flip ? - width / height : width / height
         property point center: Qt.point(param.center_x, param.center_y)
         property real rotation: param.rotation
-        property size pixel: Qt.size(1 / width, 1 / height);
+        property size pixel: Qt.size(1 / width, 1 / height)
+        property real col_shift_r: param.col_shift_r
+        property real col_shift_g: param.col_shift_g
+        property real col_shift_b: param.col_shift_b
 
         fragmentShader: root.shader ? root.header + root.shader : ''
 

@@ -6,6 +6,9 @@ uniform float esc;
 uniform int pre;
 uniform float col;
 uniform float col_shift;
+uniform float col_shift_r;
+uniform float col_shift_g;
+uniform float col_shift_b;
 uniform float col_variation;
 uniform float zoom;
 uniform float map_size;
@@ -34,6 +37,10 @@ vec2 cconj(vec2 z)  { return vec2(z.x, -z.y); }
 
 vec2 cmul(vec2 a, vec2 b) {
     return vec2(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);
+}
+
+vec2 csqr(vec2 a) {
+    return cmul(a, a);
 }
 
 vec2 clog(vec2 z) {
@@ -139,7 +146,7 @@ vec3 color_norm_itr_count(vec2 z, int i, float mean) {
     float sit = float(i) - log2(log2(dot(z,z))/(log2(esc)))/log2(k);
     vec3 color = vec3(0.0);
     if (i < iter)
-        color = 0.5 + 0.5*cos( 3.0 + sit*0.075*k + vec3(0.0, 0.4, 0.87931));
+        color = 0.5 + 0.5*cos(sit*0.075*k - vec3(col_shift_r, col_shift_g, col_shift_b));
     return color;
 }
 
@@ -155,7 +162,7 @@ vec3 color_norm_itr_count2(vec2 z, int i, float mean) {
 
 vec3 color_cyclic_log_log_yb(vec2 z, int i, float m) {
     float ci = col * log2(1.0 + log2(1.0 + m)) - col_shift;
-    return 0.5 + 0.5 * cos(ci + vec3(0.87931, 0.4, 0.0));
+    return 0.5 + 0.5 * cos(ci - vec3(col_shift_r, col_shift_g, col_shift_b));
 }
 
 vec3 color_cyclic_log_log_yb2(vec2 z, int i, float m) {
@@ -191,7 +198,7 @@ vec3 color_cyclic_log(vec2 z, int i, float m) {
 }
 
 vec3 color_iteration(vec2 z, int i, float mean) {
-    return vec3(float(i) / float(iter));
+    return vec3(pow(float(i) / float(iter) * col * 1e-3, col_shift));
 }
 
 /***********************************************************************

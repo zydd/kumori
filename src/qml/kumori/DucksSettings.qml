@@ -30,6 +30,9 @@ Control {
         property string formula: 'clog(vec2(z.x, abs(z.y))) + c'
         property string color_method: 'combined'
         property bool flip: false
+        property alias col_shift_r: colShiftFieldR.value
+        property alias col_shift_g: colShiftFieldG.value
+        property alias col_shift_b: colShiftFieldB.value
     }
 
     Settings {
@@ -195,14 +198,40 @@ Control {
 
         Item { width: 1 }
         Label { text: 'shift:' }
-//                FloatField {
-//                    id: colShiftField
-//                    value: 0.0
-//                }
         Slider {
+            id: colShiftField
             Layout.columnSpan: 3
             Layout.fillWidth: true
-            id: colShiftField
+            value: 0.0
+            from: 0
+            to: 2*Math.PI
+        }
+        Item { width: 1 }
+        Label { text: 'R:' }
+        Slider {
+            id: colShiftFieldR
+            Layout.columnSpan: 3
+            Layout.fillWidth: true
+            value: 0.0
+            from: 0
+            to: 2*Math.PI
+        }
+        Item { width: 1 }
+        Label { text: 'G:' }
+        Slider {
+            id: colShiftFieldG
+            Layout.columnSpan: 3
+            Layout.fillWidth: true
+            value: 0.0
+            from: 0
+            to: 2*Math.PI
+        }
+        Item { width: 1 }
+        Label { text: 'B:' }
+        Slider {
+            id: colShiftFieldB
+            Layout.columnSpan: 3
+            Layout.fillWidth: true
             value: 0.0
             from: 0
             to: 2*Math.PI
