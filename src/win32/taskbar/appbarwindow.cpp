@@ -61,15 +61,11 @@ bool AppbarWindow::nativeEvent(const QByteArray &/*eventType*/, void *message, l
             qDebug() << "ABN_FULLSCREENAPP" << (void *) msg->lParam;
 
             if (msg->lParam) {
-                setFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnBottomHint);
+                setFlag(Qt::WindowStaysOnTopHint, false);
+                setFlag(Qt::WindowStaysOnBottomHint, true);
             } else {
-                setFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
-                //FIXME: Qt::WindowStaysOnTopHint not enough?
-                SetWindowPos(
-                    reinterpret_cast<HWND>(winId()),
-                    HWND_TOPMOST,
-                    0, 0, 0, 0,
-                    SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW);
+                setFlag(Qt::WindowStaysOnBottomHint, false);
+                setFlag(Qt::WindowStaysOnTopHint, true);
             }
             break;
 
